@@ -256,15 +256,19 @@ impl AuthService {
             .ok_or_else(|| anyhow::anyhow!("Username or QQ number not found"))
     }
 
+    /// Checks whether the account has an active ban record.
     async fn check_banned(&self, uid: UserId) -> Result<()> {
         let mut conn = self.pool.get_conn().await?;
         let row: Option<(u32,)> = conn
             .exec_first(
-                "SELECT m_id FROM d_taiwan.member_punish_info WHERE m_id = ? LIMIT 1",
+                "SELECT m_id FROM d_taiwan.member_punish_info \
+                 WHERE m_id = ? AND apply_flag = 1 AND end_time > NOW() \
+                 LIMIT 1",
                 (uid,),
             )
             .await?;
         if row.is_some() {
+            tracing::info!("login blocked by active ban: uid={}", uid);
             return Err(anyhow::Error::new(DnfError::AccountBanned(
                 "Account banned by administrator".to_string(),
             )));
