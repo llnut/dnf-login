@@ -147,7 +147,7 @@ impl DnfLoginApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         Self::try_load_cjk_fonts(&cc.egui_ctx);
 
-        let mut style = (*cc.egui_ctx.style()).clone();
+        let mut style = (*cc.egui_ctx.global_style()).clone();
         style.text_styles.insert(
             egui::TextStyle::Body,
             egui::FontId::new(14.5, egui::FontFamily::Proportional),
@@ -167,7 +167,7 @@ impl DnfLoginApp {
         style.spacing.item_spacing = egui::vec2(8.0, 5.0);
         style.spacing.button_padding = egui::vec2(14.0, 6.0);
         style.spacing.text_edit_width = 220.0;
-        cc.egui_ctx.set_style(style);
+        cc.egui_ctx.set_global_style(style);
 
         cc.egui_ctx.set_theme(egui::ThemePreference::Dark);
 
@@ -295,21 +295,20 @@ impl DnfLoginApp {
     }
 }
 
-// eframe::App
 impl eframe::App for DnfLoginApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if let Ok(result) = self.task_rx.try_recv() {
             self.handle_task_result(result);
         }
 
-        // Kick off background loading once on the first frame.
+        // Start background loading on the first frame. eframe already skips
+        // `ui()` when the window is hidden, so no extra visibility gate is needed.
         if !self.bg_loading_started {
             self.bg_loading_started = true;
             self.start_bg_loading();
         }
 
-        // Upload background textures decoded by worker threads.
-        // Workers send Some on success or None on failure, so bg_pending reaches zero either way.
+        // Workers send Some on success or None on failure, so bg_pending drops regardless.
         let mut loaded_any = false;
         while let Ok(msg) = self.img_rx.try_recv() {
             self.bg_pending = self.bg_pending.saturating_sub(1);
@@ -330,22 +329,24 @@ impl eframe::App for DnfLoginApp {
                 }
             }
         }
-        // Keep repainting while decode tasks are still in flight.
-        if loaded_any || self.bg_pending > 0 {
+        // Request a repaint while decode or foreground tasks are still active.
+        if loaded_any || self.bg_pending > 0 || self.current_task.is_some() {
             ctx.request_repaint();
         }
+    }
 
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        // egui::Context is Arc-wrapped, so clone is a refcount bump.
+        let ctx = ui.ctx().clone();
         let screen = ctx.viewport_rect();
 
-        // Background image and thumbnail strip.
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE)
-            .show(ctx, |ui| {
+            .show_inside(ui, |ui| {
                 self.paint_background(ui, screen);
                 self.draw_thumbnail_strip(ui, screen);
             });
 
-        // Glass card floated above the background panel.
         let glass = egui::Frame::new()
             .fill(Self::c_glass_fill())
             .stroke(egui::Stroke::new(1.0, Self::c_glass_border()))
@@ -363,7 +364,7 @@ impl eframe::App for DnfLoginApp {
             .max_height(max_card_h)
             .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, -22.0))
             .frame(glass)
-            .show(ctx, |ui| {
+            .show(&ctx, |ui| {
                 match self.state {
                     AppState::Login => self.show_login_screen(ui),
                     AppState::Register => self.show_register_screen(ui),
@@ -375,11 +376,7 @@ impl eframe::App for DnfLoginApp {
             });
 
         if self.show_confirm_close_dnf {
-            self.show_confirm_close_dialog(ctx);
-        }
-
-        if self.current_task.is_some() {
-            ctx.request_repaint();
+            self.show_confirm_close_dialog(&ctx);
         }
     }
 }

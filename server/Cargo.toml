@@ -14,12 +14,12 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 chrono = { workspace = true }
 
-axum = "0.8.8"
+axum = "0.8.9"
 axum-server = { version = "0.8.0", features = ["tls-rustls"] }
 tower-http = { version = "0.6.8", features = ["trace"] }
 
 # Database - mysql_async with MySQL 5.0 support via prefer_socket(false)
 # sqlx does not support MySQL 5.0.x (no CLIENT_PLUGIN_AUTH capability)
-mysql_async = "0.36.1"
+mysql_async = "0.36.2"
 
 dotenvy = "0.15.7"

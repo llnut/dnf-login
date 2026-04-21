@@ -69,19 +69,45 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - build: client-win-msvc
+        - build: client-win-msvc-wgpu
           crate: client
           package: dnf-client
           bin: dnf-launcher
+          archive_name: dnf-launcher-wgpu
+          features: wgpu
           os: windows-latest
           rust: stable
           target: x86_64-pc-windows-msvc
           hook_target: i686-pc-windows-msvc
 
-        - build: client-win-gnu
+        - build: client-win-msvc-glow
           crate: client
           package: dnf-client
           bin: dnf-launcher
+          archive_name: dnf-launcher-glow
+          features: glow
+          os: windows-latest
+          rust: stable
+          target: x86_64-pc-windows-msvc
+          hook_target: i686-pc-windows-msvc
+
+        - build: client-win-gnu-wgpu
+          crate: client
+          package: dnf-client
+          bin: dnf-launcher
+          archive_name: dnf-launcher-wgpu
+          features: wgpu
+          os: windows-latest
+          rust: stable-x86_64-gnu
+          target: x86_64-pc-windows-gnu
+          hook_target: i686-pc-windows-gnu
+
+        - build: client-win-gnu-glow
+          crate: client
+          package: dnf-client
+          bin: dnf-launcher
+          archive_name: dnf-launcher-glow
+          features: glow
           os: windows-latest
           rust: stable-x86_64-gnu
           target: x86_64-pc-windows-gnu
@@ -216,24 +242,28 @@ jobs:
       uses: actions/cache@v5
       with:
         path: target
-        key: release-${{ runner.os }}-${{ matrix.target }}-cargo-build-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('**/*.rs') }}
+        key: release-${{ runner.os }}-${{ matrix.target }}-${{ matrix.features || 'default' }}-cargo-build-${{ hashFiles('Cargo.lock') }}-${{ hashFiles('**/*.rs') }}
         restore-keys: |
-          release-${{ runner.os }}-${{ matrix.target }}-cargo-build-${{ hashFiles('Cargo.lock') }}-
-          release-${{ runner.os }}-${{ matrix.target }}-cargo-build-
-          ${{ runner.os }}-${{ matrix.target }}-cargo-build-${{ hashFiles('Cargo.lock') }}-
+          release-${{ runner.os }}-${{ matrix.target }}-${{ matrix.features || 'default' }}-cargo-build-${{ hashFiles('Cargo.lock') }}-
+          release-${{ runner.os }}-${{ matrix.target }}-${{ matrix.features || 'default' }}-cargo-build-
+          ${{ runner.os }}-${{ matrix.target }}-${{ matrix.features || 'default' }}-cargo-build-${{ hashFiles('Cargo.lock') }}-
 
     - name: Build release binary
       shell: bash
       run: |
+        features_arg=""
+        if [ -n "${{ matrix.features }}" ]; then
+          features_arg="--no-default-features --features ${{ matrix.features }}"
+        fi
         if [ -n "${{ matrix.docker_image }}" ]; then
           docker run --rm \
             -v "$(pwd)":/volume \
             -w /volume \
             "${{ matrix.docker_image }}" \
-            cargo build --release --target ${{ matrix.target }} -p ${{ matrix.package }}
+            cargo build --release --target ${{ matrix.target }} -p ${{ matrix.package }} $features_arg
         else
           cmd="${{ matrix.use_cross && 'cross' || 'cargo' }}"
-          $cmd build --release --target ${{ matrix.target }} -p ${{ matrix.package }}
+          $cmd build --release --target ${{ matrix.target }} -p ${{ matrix.package }} $features_arg
         fi
         bin="target/${{ matrix.target }}/release/${{ matrix.bin }}"
         if [ -n "${{ matrix.ext }}" ]; then

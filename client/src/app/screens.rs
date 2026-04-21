@@ -325,288 +325,300 @@ impl DnfLoginApp {
         });
         ui.add_space(12.0);
 
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            if !self.config.is_configured() {
-                Self::warning_box(ui, tr.warn_first_launch);
-                ui.add_space(12.0);
-            }
+        egui::ScrollArea::vertical()
+            .content_margin(egui::Margin::symmetric(0, 8))
+            .show(ui, |ui| {
+                if !self.config.is_configured() {
+                    Self::warning_box(ui, tr.warn_first_launch);
+                    ui.add_space(12.0);
+                }
 
-            ui.label(
-                egui::RichText::new(tr.language_label)
-                    .size(13.0)
-                    .color(Self::c_text2()),
-            );
-            ui.add_space(4.0);
-            let old_lang = self.config.language;
-            let avail = ui.available_width();
-            egui::ComboBox::from_id_salt("language_select")
-                .selected_text(self.config.language.label())
-                .width(avail)
-                .show_ui(ui, |ui| {
-                    for &lang in Language::all() {
-                        ui.selectable_value(&mut self.config.language, lang, lang.label());
-                    }
-                });
-            if self.config.language != old_lang {
-                self.tr = translations(self.config.language);
-                let _ = self.config.save();
-            }
-            ui.add_space(14.0);
-
-            ui.add(Self::text_input(
-                tr.server_url_label,
-                &mut self.settings_server_url,
-                tr.server_url_hint,
-            ));
-            ui.add_space(3.0);
-            ui.label(
-                egui::RichText::new(tr.server_url_help)
-                    .size(11.5)
-                    .color(Self::c_text3()),
-            );
-            ui.add_space(14.0);
-
-            ui.add(Self::text_input(
-                tr.aes_key_label,
-                &mut self.settings_aes_key,
-                tr.aes_key_hint,
-            ));
-            ui.add_space(3.0);
-            ui.label(
-                egui::RichText::new(tr.aes_key_help)
-                    .size(11.5)
-                    .color(Self::c_text3()),
-            );
-            ui.add_space(14.0);
-
-            let sep =
-                egui::Rect::from_min_size(ui.cursor().min, egui::vec2(ui.available_width(), 1.0));
-            ui.painter()
-                .rect_filled(sep, egui::CornerRadius::ZERO, Self::c_border());
-            ui.add_space(13.0);
-
-            ui.add(Self::text_input(
-                tr.bg_custom_path_label,
-                &mut self.settings_bg_path,
-                tr.bg_custom_path_hint,
-            ));
-            ui.add_space(3.0);
-            ui.label(
-                egui::RichText::new(tr.bg_custom_path_help)
-                    .size(11.5)
-                    .color(Self::c_text3()),
-            );
-            ui.add_space(10.0);
-
-            ui.label(
-                egui::RichText::new(tr.bg_position_label)
-                    .size(13.0)
-                    .color(Self::c_text2()),
-            );
-            ui.add_space(4.0);
-            ui.horizontal(|ui| {
-                let old_prepend = self.config.bg_custom_prepend;
-                ui.radio_value(
-                    &mut self.config.bg_custom_prepend,
-                    false,
-                    egui::RichText::new(tr.bg_position_append).size(13.5),
+                ui.label(
+                    egui::RichText::new(tr.language_label)
+                        .size(13.0)
+                        .color(Self::c_text2()),
                 );
-                ui.add_space(8.0);
-                ui.radio_value(
-                    &mut self.config.bg_custom_prepend,
-                    true,
-                    egui::RichText::new(tr.bg_position_prepend).size(13.5),
-                );
-                if self.config.bg_custom_prepend != old_prepend {
+                ui.add_space(4.0);
+                let old_lang = self.config.language;
+                let avail = ui.available_width();
+                egui::ComboBox::from_id_salt("language_select")
+                    .selected_text(self.config.language.label())
+                    .width(avail)
+                    .show_ui(ui, |ui| {
+                        for &lang in Language::all() {
+                            ui.selectable_value(&mut self.config.language, lang, lang.label());
+                        }
+                    });
+                if self.config.language != old_lang {
+                    self.tr = translations(self.config.language);
                     let _ = self.config.save();
                 }
-            });
-            ui.add_space(10.0);
+                ui.add_space(14.0);
 
-            if Self::primary_button_slim(ui, tr.bg_reload_btn, true) {
-                self.config.bg_custom_path = self.settings_bg_path.trim().to_string();
-                let _ = self.config.save();
-                self.start_bg_loading();
-            }
-
-            ui.add_space(10.0);
-            ui.label(
-                egui::RichText::new(tr.bg_fill_mode_label)
-                    .size(13.0)
-                    .color(Self::c_text2()),
-            );
-            ui.add_space(4.0);
-            let fill_mode_label = match &self.config.bg_fill_mode {
-                BgFillMode::Tile => tr.bg_fill_tile,
-                BgFillMode::Stretch => tr.bg_fill_stretch,
-                BgFillMode::Fill => tr.bg_fill_fill,
-                BgFillMode::Center => tr.bg_fill_center,
-                BgFillMode::Fit => tr.bg_fill_fit,
-            };
-            let avail = ui.available_width();
-            let old_mode = self.config.bg_fill_mode;
-            egui::ComboBox::from_id_salt("bg_fill_mode")
-                .selected_text(fill_mode_label)
-                .width(avail)
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(
-                        &mut self.config.bg_fill_mode,
-                        BgFillMode::Fill,
-                        tr.bg_fill_fill,
-                    );
-                    ui.selectable_value(
-                        &mut self.config.bg_fill_mode,
-                        BgFillMode::Fit,
-                        tr.bg_fill_fit,
-                    );
-                    ui.selectable_value(
-                        &mut self.config.bg_fill_mode,
-                        BgFillMode::Stretch,
-                        tr.bg_fill_stretch,
-                    );
-                    ui.selectable_value(
-                        &mut self.config.bg_fill_mode,
-                        BgFillMode::Center,
-                        tr.bg_fill_center,
-                    );
-                    ui.selectable_value(
-                        &mut self.config.bg_fill_mode,
-                        BgFillMode::Tile,
-                        tr.bg_fill_tile,
-                    );
-                });
-            if self.config.bg_fill_mode != old_mode {
-                let _ = self.config.save();
-            }
-
-            ui.add_space(14.0);
-
-            let sep =
-                egui::Rect::from_min_size(ui.cursor().min, egui::vec2(ui.available_width(), 1.0));
-            ui.painter()
-                .rect_filled(sep, egui::CornerRadius::ZERO, Self::c_border());
-            ui.add_space(13.0);
-
-            ui.checkbox(
-                &mut self.settings_plugin_inject_enabled,
-                egui::RichText::new(tr.plugin_inject_label)
-                    .size(13.5)
-                    .color(Self::c_text2()),
-            );
-            ui.add_space(3.0);
-            ui.label(
-                egui::RichText::new(tr.plugin_inject_help)
-                    .size(11.5)
-                    .color(Self::c_text3()),
-            );
-            ui.add_space(10.0);
-
-            ui.add(Self::text_input(
-                tr.plugins_path_label,
-                &mut self.settings_plugins_path,
-                tr.plugins_path_hint,
-            ));
-            ui.add_space(3.0);
-            ui.label(
-                egui::RichText::new(tr.plugins_path_help)
-                    .size(11.5)
-                    .color(Self::c_text3()),
-            );
-            ui.add_space(10.0);
-
-            ui.checkbox(
-                &mut self.settings_game_server_ip_enabled,
-                egui::RichText::new(tr.game_server_ip_label)
-                    .size(13.5)
-                    .color(Self::c_text2()),
-            );
-            ui.add_space(3.0);
-            ui.label(
-                egui::RichText::new(tr.game_server_ip_help)
-                    .size(11.5)
-                    .color(Self::c_text3()),
-            );
-
-            if let Some(msg) = &self.message {
-                ui.add_space(12.0);
-                Self::status_box(ui, msg, self.message_is_error);
-            }
-
-            ui.add_space(16.0);
-
-            let sep =
-                egui::Rect::from_min_size(ui.cursor().min, egui::vec2(ui.available_width(), 1.0));
-            ui.painter()
-                .rect_filled(sep, egui::CornerRadius::ZERO, Self::c_border());
-            ui.add_space(10.0);
-
-            ui.label(
-                egui::RichText::new(tr.saved_config_label)
-                    .size(11.5)
-                    .color(Self::c_text2()),
-            );
-            ui.add_space(5.0);
-
-            if self.config.is_configured() {
-                egui::Frame::new()
-                    .fill(egui::Color32::from_rgba_premultiplied(5, 5, 12, 200))
-                    .stroke(egui::Stroke::new(1.0, Self::c_border()))
-                    .corner_radius(egui::CornerRadius::same(6))
-                    .inner_margin(egui::vec2(10.0, 8.0))
-                    .show(ui, |ui| {
-                        ui.set_min_width(ui.available_width());
-                        ui.vertical(|ui| {
-                            ui.label(egui::RichText::new("URL").size(11.5).color(Self::c_text3()));
-                            ui.add_space(2.0);
-                            ui.label(
-                                egui::RichText::new(&self.config.server_url)
-                                    .size(12.5)
-                                    .color(Self::c_text()),
-                            );
-                        });
-                        ui.add_space(10.0);
-                        ui.vertical(|ui| {
-                            ui.label(egui::RichText::new("KEY").size(11.5).color(Self::c_text3()));
-                            ui.add_space(2.0);
-                            ui.label(
-                                egui::RichText::new(&self.config.aes_key)
-                                    .size(12.5)
-                                    .color(Self::c_text()),
-                            );
-                        });
-                    });
-            } else {
+                ui.add(Self::text_input(
+                    tr.server_url_label,
+                    &mut self.settings_server_url,
+                    tr.server_url_hint,
+                ));
+                ui.add_space(3.0);
                 ui.label(
-                    egui::RichText::new(tr.not_configured)
-                        .size(13.0)
+                    egui::RichText::new(tr.server_url_help)
+                        .size(11.5)
                         .color(Self::c_text3()),
                 );
-            }
+                ui.add_space(14.0);
 
-            ui.add_space(16.0);
+                ui.add(Self::text_input(
+                    tr.aes_key_label,
+                    &mut self.settings_aes_key,
+                    tr.aes_key_hint,
+                ));
+                ui.add_space(3.0);
+                ui.label(
+                    egui::RichText::new(tr.aes_key_help)
+                        .size(11.5)
+                        .color(Self::c_text3()),
+                );
+                ui.add_space(14.0);
 
-            ui.horizontal(|ui| {
-                if ui.add(Self::secondary_button(tr.back)).clicked() {
-                    self.state = AppState::Login;
-                    self.message = None;
-                    self.message_is_error = false;
+                let sep = egui::Rect::from_min_size(
+                    ui.cursor().min,
+                    egui::vec2(ui.available_width(), 1.0),
+                );
+                ui.painter()
+                    .rect_filled(sep, egui::CornerRadius::ZERO, Self::c_border());
+                ui.add_space(13.0);
+
+                ui.add(Self::text_input(
+                    tr.bg_custom_path_label,
+                    &mut self.settings_bg_path,
+                    tr.bg_custom_path_hint,
+                ));
+                ui.add_space(3.0);
+                ui.label(
+                    egui::RichText::new(tr.bg_custom_path_help)
+                        .size(11.5)
+                        .color(Self::c_text3()),
+                );
+                ui.add_space(10.0);
+
+                ui.label(
+                    egui::RichText::new(tr.bg_position_label)
+                        .size(13.0)
+                        .color(Self::c_text2()),
+                );
+                ui.add_space(4.0);
+                ui.horizontal(|ui| {
+                    let old_prepend = self.config.bg_custom_prepend;
+                    ui.radio_value(
+                        &mut self.config.bg_custom_prepend,
+                        false,
+                        egui::RichText::new(tr.bg_position_append).size(13.5),
+                    );
+                    ui.add_space(8.0);
+                    ui.radio_value(
+                        &mut self.config.bg_custom_prepend,
+                        true,
+                        egui::RichText::new(tr.bg_position_prepend).size(13.5),
+                    );
+                    if self.config.bg_custom_prepend != old_prepend {
+                        let _ = self.config.save();
+                    }
+                });
+                ui.add_space(10.0);
+
+                if Self::primary_button_slim(ui, tr.bg_reload_btn, true) {
+                    self.config.bg_custom_path = self.settings_bg_path.trim().to_string();
+                    let _ = self.config.save();
+                    self.start_bg_loading();
                 }
-                ui.add_space(6.0);
-                if ui.add(Self::secondary_button(tr.clear_btn)).clicked() {
-                    self.settings_server_url.clear();
-                    self.settings_aes_key.clear();
+
+                ui.add_space(10.0);
+                ui.label(
+                    egui::RichText::new(tr.bg_fill_mode_label)
+                        .size(13.0)
+                        .color(Self::c_text2()),
+                );
+                ui.add_space(4.0);
+                let fill_mode_label = match &self.config.bg_fill_mode {
+                    BgFillMode::Tile => tr.bg_fill_tile,
+                    BgFillMode::Stretch => tr.bg_fill_stretch,
+                    BgFillMode::Fill => tr.bg_fill_fill,
+                    BgFillMode::Center => tr.bg_fill_center,
+                    BgFillMode::Fit => tr.bg_fill_fit,
+                };
+                let avail = ui.available_width();
+                let old_mode = self.config.bg_fill_mode;
+                egui::ComboBox::from_id_salt("bg_fill_mode")
+                    .selected_text(fill_mode_label)
+                    .width(avail)
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(
+                            &mut self.config.bg_fill_mode,
+                            BgFillMode::Fill,
+                            tr.bg_fill_fill,
+                        );
+                        ui.selectable_value(
+                            &mut self.config.bg_fill_mode,
+                            BgFillMode::Fit,
+                            tr.bg_fill_fit,
+                        );
+                        ui.selectable_value(
+                            &mut self.config.bg_fill_mode,
+                            BgFillMode::Stretch,
+                            tr.bg_fill_stretch,
+                        );
+                        ui.selectable_value(
+                            &mut self.config.bg_fill_mode,
+                            BgFillMode::Center,
+                            tr.bg_fill_center,
+                        );
+                        ui.selectable_value(
+                            &mut self.config.bg_fill_mode,
+                            BgFillMode::Tile,
+                            tr.bg_fill_tile,
+                        );
+                    });
+                if self.config.bg_fill_mode != old_mode {
+                    let _ = self.config.save();
                 }
-                ui.add_space(6.0);
-                let save_enabled = !self.settings_server_url.trim().is_empty()
-                    && !self.settings_aes_key.trim().is_empty();
-                let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
-                if Self::primary_button_slim(ui, tr.save_btn, save_enabled)
-                    || (enter_pressed && save_enabled)
-                {
-                    self.handle_save_settings();
+
+                ui.add_space(14.0);
+
+                let sep = egui::Rect::from_min_size(
+                    ui.cursor().min,
+                    egui::vec2(ui.available_width(), 1.0),
+                );
+                ui.painter()
+                    .rect_filled(sep, egui::CornerRadius::ZERO, Self::c_border());
+                ui.add_space(13.0);
+
+                ui.checkbox(
+                    &mut self.settings_plugin_inject_enabled,
+                    egui::RichText::new(tr.plugin_inject_label)
+                        .size(13.5)
+                        .color(Self::c_text2()),
+                );
+                ui.add_space(3.0);
+                ui.label(
+                    egui::RichText::new(tr.plugin_inject_help)
+                        .size(11.5)
+                        .color(Self::c_text3()),
+                );
+                ui.add_space(10.0);
+
+                ui.add(Self::text_input(
+                    tr.plugins_path_label,
+                    &mut self.settings_plugins_path,
+                    tr.plugins_path_hint,
+                ));
+                ui.add_space(3.0);
+                ui.label(
+                    egui::RichText::new(tr.plugins_path_help)
+                        .size(11.5)
+                        .color(Self::c_text3()),
+                );
+                ui.add_space(10.0);
+
+                ui.checkbox(
+                    &mut self.settings_game_server_ip_enabled,
+                    egui::RichText::new(tr.game_server_ip_label)
+                        .size(13.5)
+                        .color(Self::c_text2()),
+                );
+                ui.add_space(3.0);
+                ui.label(
+                    egui::RichText::new(tr.game_server_ip_help)
+                        .size(11.5)
+                        .color(Self::c_text3()),
+                );
+
+                if let Some(msg) = &self.message {
+                    ui.add_space(12.0);
+                    Self::status_box(ui, msg, self.message_is_error);
                 }
+
+                ui.add_space(16.0);
+
+                let sep = egui::Rect::from_min_size(
+                    ui.cursor().min,
+                    egui::vec2(ui.available_width(), 1.0),
+                );
+                ui.painter()
+                    .rect_filled(sep, egui::CornerRadius::ZERO, Self::c_border());
+                ui.add_space(10.0);
+
+                ui.label(
+                    egui::RichText::new(tr.saved_config_label)
+                        .size(11.5)
+                        .color(Self::c_text2()),
+                );
+                ui.add_space(5.0);
+
+                if self.config.is_configured() {
+                    egui::Frame::new()
+                        .fill(egui::Color32::from_rgba_premultiplied(5, 5, 12, 200))
+                        .stroke(egui::Stroke::new(1.0, Self::c_border()))
+                        .corner_radius(egui::CornerRadius::same(6))
+                        .inner_margin(egui::vec2(10.0, 8.0))
+                        .show(ui, |ui| {
+                            ui.set_min_width(ui.available_width());
+                            ui.vertical(|ui| {
+                                ui.label(
+                                    egui::RichText::new("URL").size(11.5).color(Self::c_text3()),
+                                );
+                                ui.add_space(2.0);
+                                ui.label(
+                                    egui::RichText::new(&self.config.server_url)
+                                        .size(12.5)
+                                        .color(Self::c_text()),
+                                );
+                            });
+                            ui.add_space(10.0);
+                            ui.vertical(|ui| {
+                                ui.label(
+                                    egui::RichText::new("KEY").size(11.5).color(Self::c_text3()),
+                                );
+                                ui.add_space(2.0);
+                                ui.label(
+                                    egui::RichText::new(&self.config.aes_key)
+                                        .size(12.5)
+                                        .color(Self::c_text()),
+                                );
+                            });
+                        });
+                } else {
+                    ui.label(
+                        egui::RichText::new(tr.not_configured)
+                            .size(13.0)
+                            .color(Self::c_text3()),
+                    );
+                }
+
+                ui.add_space(16.0);
+
+                ui.horizontal(|ui| {
+                    if ui.add(Self::secondary_button(tr.back)).clicked() {
+                        self.state = AppState::Login;
+                        self.message = None;
+                        self.message_is_error = false;
+                    }
+                    ui.add_space(6.0);
+                    if ui.add(Self::secondary_button(tr.clear_btn)).clicked() {
+                        self.settings_server_url.clear();
+                        self.settings_aes_key.clear();
+                    }
+                    ui.add_space(6.0);
+                    let save_enabled = !self.settings_server_url.trim().is_empty()
+                        && !self.settings_aes_key.trim().is_empty();
+                    let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
+                    if Self::primary_button_slim(ui, tr.save_btn, save_enabled)
+                        || (enter_pressed && save_enabled)
+                    {
+                        self.handle_save_settings();
+                    }
+                });
             });
-        });
     }
 }
 

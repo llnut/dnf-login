@@ -31,7 +31,19 @@ fn load_window_icon() -> egui::IconData {
     }
 }
 
+/// Attach the parent process console on Windows so logs stay visible when launched from a terminal.
+#[cfg(windows)]
+fn attach_parent_console() {
+    use windows::Win32::System::Console::{ATTACH_PARENT_PROCESS, AttachConsole};
+    unsafe {
+        let _ = AttachConsole(ATTACH_PARENT_PROCESS);
+    }
+}
+
 fn main() -> Result<()> {
+    #[cfg(windows)]
+    attach_parent_console();
+
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .with_target(false)

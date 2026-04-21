@@ -117,6 +117,14 @@ cargo build --release -p dnf-client --target x86_64-pc-windows-gnu
 ## Client Deployment
 
 1. Download the archive for your platform from the [Releases](https://github.com/llnut/dnf-login/releases) page and extract the executable into the game directory alongside `DNF.exe`.
+
+   Two rendering backends are provided per target:
+
+   | Asset | Backend | Note |
+   |---|---|---|
+   | `dnf-launcher-wgpu-*` | DX12 or Vulkan | Needs DX12 or Vulkan driver support. |
+   | `dnf-launcher-glow-*` | OpenGL 2.0+ | Smaller binary and lower memory footprint. Needs an OpenGL 2.0+ driver. |
+
 2. Copy `Config.example.toml` to `Config.toml` in the same directory and set `server_url` and `aes_key`. These can also be configured from the in-app settings screen.
 
 ```toml
