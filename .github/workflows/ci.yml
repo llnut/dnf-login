@@ -291,6 +291,7 @@ jobs:
         cp README.md "$ARCHIVE"/
         if [ "${{ matrix.crate }}" == "client" ]; then
           cp client/Config.example.toml "$ARCHIVE"/
+          cp -r client/assets "$ARCHIVE"/
           if [ -n "${{ matrix.hook_target }}" ]; then
             cp "target/${{ matrix.hook_target }}/release/ijl15.dll" "$ARCHIVE"/
           fi

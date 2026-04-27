@@ -1,7 +1,7 @@
 use eframe::egui;
 use std::sync::mpsc::channel;
 
-use super::{BG_IMAGES, BgImageData, DnfLoginApp, THUMB_H, THUMB_W};
+use super::{BgImageData, DnfLoginApp, THUMB_H, THUMB_W};
 
 impl DnfLoginApp {
     /// Decodes the embedded ICO file and registers it as an egui texture.
@@ -60,7 +60,7 @@ impl DnfLoginApp {
 
     /// Scans `dir` for JPG/JPEG files and returns their paths sorted by filename.
     /// Returns an empty list if the directory does not exist or cannot be read.
-    pub(super) fn scan_custom_bg_dir(dir: &str) -> Vec<std::path::PathBuf> {
+    pub(super) fn scan_image_dir(dir: &str) -> Vec<std::path::PathBuf> {
         let path = std::path::Path::new(dir);
         if !path.is_dir() {
             return Vec::new();
@@ -82,34 +82,32 @@ impl DnfLoginApp {
         entries
     }
 
-    /// Spawns background decode tasks for all images. Replacing `img_rx` disconnects
-    /// the old channel so any stale in-flight tasks discard their results silently.
+    /// Spawns background decode tasks for every JPG file found in
+    /// `config.bg_pic_path`. Replacing `img_rx` disconnects the old channel so
+    /// any stale in-flight tasks discard their results silently.
     ///
     /// A `Semaphore` limits concurrent CPU-bound tasks to `max(1, cpu_count − 1)`,
     /// leaving at least one core available for the render thread during loading.
     pub(super) fn start_bg_loading(&mut self) {
-        let custom_paths = Self::scan_custom_bg_dir(&self.config.bg_custom_path);
-        let n_builtin = BG_IMAGES.len();
-        let n_custom = custom_paths.len();
-        let n_total = n_builtin + n_custom;
+        let paths = Self::scan_image_dir(&self.config.bg_pic_path);
+        let n = paths.len();
 
-        self.bgs = vec![None; n_total];
-        self.bg_thumbs = vec![None; n_total];
+        self.bgs = vec![None; n];
+        self.bg_thumbs = vec![None; n];
         // Fall back to the first image when the saved index is out of range.
         // config.bg_index is intentionally left unchanged.
-        if n_total == 0 || self.current_bg >= n_total {
+        if n == 0 || self.current_bg >= n {
             self.current_bg = 0;
         }
 
         let (img_tx, img_rx) = channel::<Option<BgImageData>>();
         self.img_rx = img_rx;
-        self.bg_pending = n_total;
+        self.bg_pending = n;
 
         let bg_w = 960u32;
         let bg_h = 540u32;
         let thumb_w = THUMB_W;
         let thumb_h = THUMB_H;
-        let prepend = self.config.bg_custom_prepend;
 
         let parallelism = std::thread::available_parallelism()
             .map(|n| n.get())
@@ -117,31 +115,7 @@ impl DnfLoginApp {
         let max_jobs = parallelism.saturating_sub(1).max(1);
         let sem = std::sync::Arc::new(tokio::sync::Semaphore::new(max_jobs));
 
-        // Built-in images (embedded at compile time).
-        for (i, (_, bytes)) in BG_IMAGES.iter().enumerate() {
-            let final_index = if prepend { n_custom + i } else { i };
-            let tx = img_tx.clone();
-            let bytes: &'static [u8] = bytes;
-            let sem = sem.clone();
-            self.runtime.spawn(async move {
-                let _permit = sem.acquire_owned().await.ok();
-                let result = tokio::task::spawn_blocking(move || {
-                    Self::decode_bg_pair(bytes, bg_w, bg_h, thumb_w, thumb_h).map(
-                        |(full_image, thumb_image)| BgImageData {
-                            index: final_index,
-                            full_image,
-                            thumb_image,
-                        },
-                    )
-                })
-                .await;
-                let _ = tx.send(result.ok().flatten());
-            });
-        }
-
-        // Custom images loaded from the filesystem at runtime.
-        for (i, path) in custom_paths.into_iter().enumerate() {
-            let final_index = if prepend { i } else { n_builtin + i };
+        for (i, path) in paths.into_iter().enumerate() {
             let tx = img_tx.clone();
             let sem = sem.clone();
             self.runtime.spawn(async move {
@@ -150,7 +124,7 @@ impl DnfLoginApp {
                     let bytes = std::fs::read(&path).ok()?;
                     Self::decode_bg_pair(&bytes, bg_w, bg_h, thumb_w, thumb_h).map(
                         |(full_image, thumb_image)| BgImageData {
-                            index: final_index,
+                            index: i,
                             full_image,
                             thumb_image,
                         },

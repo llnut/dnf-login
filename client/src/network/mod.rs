@@ -189,7 +189,7 @@ pub async fn resolve_server_ip(server_url: &str) -> Option<String> {
         }
     };
 
-    // Already an IP literal — return only if it is IPv4; gethostbyname does not support IPv6.
+    // Already an IP literal.
     if let Ok(ip) = host.parse::<std::net::IpAddr>() {
         return if ip.is_ipv4() {
             Some(ip.to_string())
@@ -198,7 +198,7 @@ pub async fn resolve_server_ip(server_url: &str) -> Option<String> {
         };
     }
 
-    // Domain name — resolve and prefer the first IPv4 result.
+    // Domain name.
     tokio::net::lookup_host(format!("{}:0", host))
         .await
         .ok()?

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use eframe::egui;
 use std::sync::mpsc::{Receiver, Sender, channel};
+use std::time::Instant;
 
 use crate::{
     config::AppConfig, i18n::translations, network::DnfClient, storage::CredentialStorage,
@@ -11,28 +12,10 @@ mod handlers;
 mod render;
 mod screens;
 mod theme;
+mod video;
 mod widgets;
 
-pub(super) const BG_IMAGES: &[(&str, &[u8])] = &[
-    ("bg1", include_bytes!("../../assets/bg1.jpg")),
-    ("bg2", include_bytes!("../../assets/bg2.jpg")),
-    ("bg3", include_bytes!("../../assets/bg3.jpg")),
-    ("bg4", include_bytes!("../../assets/bg4.jpg")),
-    ("bg5", include_bytes!("../../assets/bg5.jpg")),
-    ("bg6", include_bytes!("../../assets/bg6.jpg")),
-    ("bg7", include_bytes!("../../assets/bg7.jpg")),
-    ("bg8", include_bytes!("../../assets/bg8.jpg")),
-    ("bg9", include_bytes!("../../assets/bg9.jpg")),
-    ("bg10", include_bytes!("../../assets/bg10.jpg")),
-    ("bg11", include_bytes!("../../assets/bg11.jpg")),
-    ("bg12", include_bytes!("../../assets/bg12.jpg")),
-    ("bg13", include_bytes!("../../assets/bg13.jpg")),
-    ("bg14", include_bytes!("../../assets/bg14.jpg")),
-    ("bg15", include_bytes!("../../assets/bg15.jpg")),
-    ("bg16", include_bytes!("../../assets/bg16.jpg")),
-    ("bg17", include_bytes!("../../assets/bg17.jpg")),
-    ("bg18", include_bytes!("../../assets/bg18.jpg")),
-];
+use video::{VideoEntry, VideoLoadData, VideoWorkerHandle};
 
 pub(super) const THUMB_W: u32 = 64;
 pub(super) const THUMB_H: u32 = 36;
@@ -111,12 +94,29 @@ pub struct DnfLoginApp {
     // Set to true after the first frame triggers background loading.
     pub(super) bg_loading_started: bool,
 
+    pub(super) videos: Vec<VideoEntry>,
+    pub(super) video_thumbs: Vec<Option<egui::TextureHandle>>,
+    pub(super) video_texture: Option<egui::TextureHandle>,
+    pub(super) video_worker: Option<VideoWorkerHandle>,
+    // Index of the video the worker is currently decoding.
+    pub(super) video_worker_idx: Option<usize>,
+    pub(super) current_video: usize,
+    // Wall-clock instant at which the next frame should be displayed.
+    pub(super) next_video_frame_at: Option<Instant>,
+    // Receives async-loaded video bytes and thumbnail for population.
+    pub(super) video_load_rx: Receiver<Option<VideoLoadData>>,
+    // Number of video load tasks still in flight.
+    pub(super) video_pending: usize,
+    // Set to true after the first frame triggers video loading.
+    pub(super) video_loading_started: bool,
+
     pub(super) state: AppState,
     pub(super) current_task: Option<TaskType>,
 
     pub(super) settings_server_url: String,
     pub(super) settings_aes_key: String,
-    pub(super) settings_bg_path: String,
+    pub(super) settings_pic_path: String,
+    pub(super) settings_vid_path: String,
     pub(super) settings_plugins_path: String,
     pub(super) settings_plugin_inject_enabled: bool,
     pub(super) settings_game_server_ip_enabled: bool,
@@ -234,7 +234,8 @@ impl DnfLoginApp {
 
         let settings_server_url = config.server_url.clone();
         let settings_aes_key = config.aes_key.clone();
-        let settings_bg_path = config.bg_custom_path.clone();
+        let settings_pic_path = config.bg_pic_path.clone();
+        let settings_vid_path = config.bg_vid_path.clone();
         let settings_plugins_path = config.plugins_path.clone();
         let settings_plugin_inject_enabled = config.plugin_inject_enabled;
         let settings_game_server_ip_enabled = config.game_server_ip_enabled;
@@ -242,12 +243,16 @@ impl DnfLoginApp {
         let tr = translations(config.language);
         let app_icon = Self::load_app_icon(&cc.egui_ctx);
 
-        let n = BG_IMAGES.len();
-        let bgs = vec![None; n];
-        let bg_thumbs = vec![None; n];
+        // Image vectors start empty; `start_bg_loading` resizes them on the
+        // first frame after scanning the picture directory.
+        let bgs: Vec<Option<egui::TextureHandle>> = Vec::new();
+        let bg_thumbs: Vec<Option<egui::TextureHandle>> = Vec::new();
         // Sender is dropped immediately, leaving a disconnected receiver.
-        // start_bg_loading() replaces it on the first update() frame.
+        // `start_bg_loading` replaces it on the first update frame.
         let (_, img_rx) = channel::<Option<BgImageData>>();
+        // Same trick for the video load channel.
+        let (_, video_load_rx) = channel::<Option<VideoLoadData>>();
+        let current_video = config.bg_video_index;
 
         Self {
             config,
@@ -268,11 +273,22 @@ impl DnfLoginApp {
             img_rx,
             bg_pending: 0,
             bg_loading_started: false,
+            videos: Vec::new(),
+            video_thumbs: Vec::new(),
+            video_texture: None,
+            video_worker: None,
+            video_worker_idx: None,
+            current_video,
+            next_video_frame_at: None,
+            video_load_rx,
+            video_pending: 0,
+            video_loading_started: false,
             state: AppState::Login,
             current_task: None,
             settings_server_url,
             settings_aes_key,
-            settings_bg_path,
+            settings_pic_path,
+            settings_vid_path,
             settings_plugins_path,
             settings_plugin_inject_enabled,
             settings_game_server_ip_enabled,
@@ -295,6 +311,17 @@ impl DnfLoginApp {
     }
 }
 
+impl Drop for DnfLoginApp {
+    /// Stop the video worker before any field is dropped.
+    /// Field drop order would otherwise destroy the tokio runtime first. The
+    /// runtime then blocks waiting for the worker thread, but the worker is
+    /// blocked sending into a full sync channel whose receiver still lives on
+    /// the not-yet-dropped handle.
+    fn drop(&mut self) {
+        self.video_worker = None;
+    }
+}
+
 impl eframe::App for DnfLoginApp {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if let Ok(result) = self.task_rx.try_recv() {
@@ -306,6 +333,10 @@ impl eframe::App for DnfLoginApp {
         if !self.bg_loading_started {
             self.bg_loading_started = true;
             self.start_bg_loading();
+        }
+        if !self.video_loading_started {
+            self.video_loading_started = true;
+            self.start_video_loading();
         }
 
         // Workers send Some on success or None on failure, so bg_pending drops regardless.
@@ -329,8 +360,33 @@ impl eframe::App for DnfLoginApp {
                 }
             }
         }
+
+        while let Ok(msg) = self.video_load_rx.try_recv() {
+            self.video_pending = self.video_pending.saturating_sub(1);
+            if let Some(data) = msg {
+                let i = data.index;
+                if i < self.videos.len() {
+                    self.videos[i].bytes = data.bytes;
+                    self.video_thumbs[i] = Some(ctx.load_texture(
+                        format!("video_thumb_{i}"),
+                        data.thumb_image,
+                        egui::TextureOptions::LINEAR,
+                    ));
+                    loaded_any = true;
+                }
+            }
+        }
+
+        // Pauses the worker while in image mode instead of dropping it, so
+        // the last decoded frame stays on screen.
+        self.tick_video(ctx);
+
         // Request a repaint while decode or foreground tasks are still active.
-        if loaded_any || self.bg_pending > 0 || self.current_task.is_some() {
+        if loaded_any
+            || self.bg_pending > 0
+            || self.video_pending > 0
+            || self.current_task.is_some()
+        {
             ctx.request_repaint();
         }
     }

@@ -77,7 +77,7 @@ pub struct Tr {
     pub hint_enter_new_password: &'static str,
     pub hint_confirm_new_password: &'static str,
 
-    // Settings screen — background fill mode
+    // Background fill mode
     pub bg_fill_mode_label: &'static str,
     pub bg_fill_tile: &'static str,
     pub bg_fill_stretch: &'static str,
@@ -85,25 +85,30 @@ pub struct Tr {
     pub bg_fill_center: &'static str,
     pub bg_fill_fit: &'static str,
 
-    // Settings screen — game server IP
+    // Background source toggle pill
+    pub bg_toggle_image: &'static str,
+    pub bg_toggle_video: &'static str,
+
+    // Game server IP
     pub game_server_ip_label: &'static str,
     pub game_server_ip_help: &'static str,
 
-    // Settings screen — plugin path
+    // Plugin path
     pub plugins_path_label: &'static str,
     pub plugins_path_hint: &'static str,
     pub plugins_path_help: &'static str,
     pub plugin_inject_label: &'static str,
     pub plugin_inject_help: &'static str,
 
-    // Settings screen — custom background section
-    pub bg_custom_path_label: &'static str,
-    pub bg_custom_path_hint: &'static str,
-    pub bg_custom_path_help: &'static str,
-    pub bg_position_label: &'static str,
-    pub bg_position_append: &'static str,
-    pub bg_position_prepend: &'static str,
+    // Background folders
+    pub bg_pic_path_label: &'static str,
+    pub bg_pic_path_hint: &'static str,
+    pub bg_pic_path_help: &'static str,
+    pub bg_vid_path_label: &'static str,
+    pub bg_vid_path_hint: &'static str,
+    pub bg_vid_path_help: &'static str,
     pub bg_reload_btn: &'static str,
+    pub bg_reload_empty: &'static str,
 
     // Settings screen
     pub settings_title: &'static str,
@@ -223,6 +228,9 @@ const EN: Tr = Tr {
     bg_fill_center: "Center",
     bg_fill_fit: "Fit",
 
+    bg_toggle_image: "Image",
+    bg_toggle_video: "Video",
+
     game_server_ip_label: "Set GAME_SERVER_IP on launch",
     game_server_ip_help: "When enabled, the launcher fetches the game server IP and passes it to DNF.exe via the GAME_SERVER_IP environment variable.",
 
@@ -232,13 +240,14 @@ const EN: Tr = Tr {
     plugin_inject_label: "Enable DLL injection",
     plugin_inject_help: "When enabled, DLL files in the plugin path are injected into DNF.exe at launch.",
 
-    bg_custom_path_label: "CUSTOM WALLPAPER PATH",
-    bg_custom_path_hint: "e.g. assets/bg",
-    bg_custom_path_help: "All JPG files in this folder are used as wallpapers. Path is relative to the launcher executable.",
-    bg_position_label: "INSERT POSITION",
-    bg_position_append: "Append",
-    bg_position_prepend: "Prepend",
-    bg_reload_btn: "RELOAD WALLPAPERS",
+    bg_pic_path_label: "PICTURE FOLDER",
+    bg_pic_path_hint: "e.g. assets/pic",
+    bg_pic_path_help: "All JPG files in this folder are used as wallpapers. Path is relative to the launcher executable.",
+    bg_vid_path_label: "VIDEO FOLDER",
+    bg_vid_path_hint: "e.g. assets/vid",
+    bg_vid_path_help: "All WebP and MP4 files in this folder are used as background videos. Path is relative to the launcher executable.",
+    bg_reload_btn: "RELOAD",
+    bg_reload_empty: "No images or videos found in the configured folders.",
 
     settings_title: "Settings",
     server_url_label: "SERVER URL",
@@ -341,6 +350,9 @@ const ZH_CN: Tr = Tr {
     bg_fill_center: "居中",
     bg_fill_fit: "适应",
 
+    bg_toggle_image: "图片",
+    bg_toggle_video: "视频",
+
     game_server_ip_label: "启动时设置 GAME_SERVER_IP",
     game_server_ip_help: "开启后，启动器将获取游戏服务器 IP 并通过环境变量 GAME_SERVER_IP 传递给 DNF.exe。",
 
@@ -350,13 +362,14 @@ const ZH_CN: Tr = Tr {
     plugin_inject_label: "启用 DLL 注入",
     plugin_inject_help: "开启后，游戏启动时将自动把插件路径中的 DLL 文件注入 DNF.exe。",
 
-    bg_custom_path_label: "自定义壁纸目录",
-    bg_custom_path_hint: "例：assets/bg",
-    bg_custom_path_help: "目录中所有的 JPG 图片将作为壁纸，路径相对于程序所在目录。",
-    bg_position_label: "插入位置",
-    bg_position_append: "追加到末尾",
-    bg_position_prepend: "插入到开头",
-    bg_reload_btn: "重新加载壁纸",
+    bg_pic_path_label: "图片目录",
+    bg_pic_path_hint: "例：assets/pic",
+    bg_pic_path_help: "此目录下的所有 JPG 文件都会用作背景，路径相对于程序所在目录。",
+    bg_vid_path_label: "视频目录",
+    bg_vid_path_hint: "例：assets/vid",
+    bg_vid_path_help: "此目录下的所有 WebP 和 MP4 文件都会用作背景视频，路径相对于程序所在目录。",
+    bg_reload_btn: "重新加载",
+    bg_reload_empty: "指定目录下没有找到任何图片或视频。",
 
     settings_title: "设置",
     server_url_label: "服务器地址",
@@ -459,6 +472,9 @@ const ZH_TW: Tr = Tr {
     bg_fill_center: "置中",
     bg_fill_fit: "適合",
 
+    bg_toggle_image: "圖片",
+    bg_toggle_video: "影片",
+
     game_server_ip_label: "啟動時設定 GAME_SERVER_IP",
     game_server_ip_help: "啟用後，啟動器會取得遊戲伺服器 IP，並透過環境變數 GAME_SERVER_IP 傳遞給 DNF.exe。",
 
@@ -468,13 +484,14 @@ const ZH_TW: Tr = Tr {
     plugin_inject_label: "啟用 DLL 注入",
     plugin_inject_help: "開啟後，遊戲啟動時將自動把插件路徑中的 DLL 檔案注入 DNF.exe。",
 
-    bg_custom_path_label: "自訂背景圖片路徑",
-    bg_custom_path_hint: "例：assets/bg",
-    bg_custom_path_help: "該路徑下的所有 JPG 圖片將作為背景，路徑相對於程式所在目錄。",
-    bg_position_label: "插入位置",
-    bg_position_append: "附加至末尾",
-    bg_position_prepend: "插入至開頭",
-    bg_reload_btn: "重新載入背景",
+    bg_pic_path_label: "圖片資料夾",
+    bg_pic_path_hint: "例：assets/pic",
+    bg_pic_path_help: "此資料夾中的所有 JPG 檔案皆會作為背景，路徑相對於程式所在目錄。",
+    bg_vid_path_label: "影片資料夾",
+    bg_vid_path_hint: "例：assets/vid",
+    bg_vid_path_help: "此資料夾中的所有 WebP 與 MP4 檔案皆會作為背景影片，路徑相對於程式所在目錄。",
+    bg_reload_btn: "重新載入",
+    bg_reload_empty: "指定資料夾中找不到任何圖片或影片。",
 
     settings_title: "設定",
     server_url_label: "伺服器位址",
@@ -577,6 +594,9 @@ const JA: Tr = Tr {
     bg_fill_center: "中央に表示",
     bg_fill_fit: "画面に合わせる",
 
+    bg_toggle_image: "画像",
+    bg_toggle_video: "動画",
+
     game_server_ip_label: "起動時に GAME_SERVER_IP を設定",
     game_server_ip_help: "有効にすると、ランチャーがゲームサーバーの IP を取得し、環境変数 GAME_SERVER_IP として DNF.exe に渡します。",
 
@@ -586,13 +606,14 @@ const JA: Tr = Tr {
     plugin_inject_label: "DLL インジェクションを有効化",
     plugin_inject_help: "有効にすると、ゲーム起動後にプラグインパス内の DLL ファイルが DNF.exe へ自動的に注入されます。",
 
-    bg_custom_path_label: "カスタム背景フォルダ",
-    bg_custom_path_hint: "例：assets/bg",
-    bg_custom_path_help: "フォルダ内のすべての JPG ファイルが背景として追加されます。パスは実行ファイルからの相対パスです。",
-    bg_position_label: "挿入位置",
-    bg_position_append: "末尾に追加",
-    bg_position_prepend: "先頭に挿入",
-    bg_reload_btn: "背景を再読み込み",
+    bg_pic_path_label: "画像フォルダ",
+    bg_pic_path_hint: "例：assets/pic",
+    bg_pic_path_help: "フォルダ内のすべての JPG ファイルが背景として使われます。パスは実行ファイルからの相対パスです。",
+    bg_vid_path_label: "動画フォルダ",
+    bg_vid_path_hint: "例：assets/vid",
+    bg_vid_path_help: "フォルダ内のすべての WebP と MP4 ファイルが背景動画として使われます。パスは実行ファイルからの相対パスです。",
+    bg_reload_btn: "再読み込み",
+    bg_reload_empty: "設定したフォルダに画像も動画も見つかりませんでした。",
 
     settings_title: "設定",
     server_url_label: "サーバーURL",
@@ -695,6 +716,9 @@ const KO: Tr = Tr {
     bg_fill_center: "가운데",
     bg_fill_fit: "화면에 맞춤",
 
+    bg_toggle_image: "사진",
+    bg_toggle_video: "영상",
+
     game_server_ip_label: "실행 시 GAME_SERVER_IP 설정",
     game_server_ip_help: "활성화하면 런처가 게임 서버 IP를 가져와 환경 변수 GAME_SERVER_IP로 DNF.exe에 전달합니다.",
 
@@ -704,13 +728,14 @@ const KO: Tr = Tr {
     plugin_inject_label: "DLL 주입 사용",
     plugin_inject_help: "활성화하면 게임 실행 후 플러그인 경로의 DLL 파일이 DNF.exe에 자동으로 주입됩니다.",
 
-    bg_custom_path_label: "배경 이미지 폴더",
-    bg_custom_path_hint: "예: assets/bg",
-    bg_custom_path_help: "폴더 내 모든 JPG 파일이 배경으로 추가됩니다. 경로는 실행 파일 기준 상대 경로입니다.",
-    bg_position_label: "삽입 위치",
-    bg_position_append: "뒤에 추가",
-    bg_position_prepend: "앞에 삽입",
-    bg_reload_btn: "배경 다시 불러오기",
+    bg_pic_path_label: "이미지 폴더",
+    bg_pic_path_hint: "예: assets/pic",
+    bg_pic_path_help: "폴더 내 모든 JPG 파일이 배경으로 사용됩니다. 경로는 실행 파일 기준 상대 경로입니다.",
+    bg_vid_path_label: "동영상 폴더",
+    bg_vid_path_hint: "예: assets/vid",
+    bg_vid_path_help: "폴더 내 모든 WebP 와 MP4 파일이 배경 동영상으로 사용됩니다. 경로는 실행 파일 기준 상대 경로입니다.",
+    bg_reload_btn: "다시 불러오기",
+    bg_reload_empty: "설정한 폴더에서 이미지와 동영상을 찾을 수 없습니다.",
 
     settings_title: "설정",
     server_url_label: "서버 주소",

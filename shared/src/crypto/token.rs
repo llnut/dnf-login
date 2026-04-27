@@ -13,7 +13,7 @@ use crate::{DnfError, Result};
 /// Uses RSA PKCS#1 v1.5 private-key signing (type-1 block). Channel
 /// verifies the token with the matching public key embedded in its binary.
 ///
-/// Token plaintext format: `{uid:08x}010101...0155914510010403030101` — 46 bytes binary.
+/// Token plaintext format: `{uid:08x}010101...0155914510010403030101`.
 pub struct TokenGenerator {
     private_key: RsaPrivateKey,
 }
@@ -44,7 +44,7 @@ impl TokenGenerator {
         debug_assert_eq!(token_bytes.len(), 46);
 
         // PKCS#1 v1.5 private-key sign (type-1 block, no hash prefix).
-        // Deterministic — rng parameter is ignored by this scheme.
+        // Deterministic.
         let encrypted = Pkcs1v15Sign::new_unprefixed()
             .sign(None::<&mut OsRng>, &self.private_key, &token_bytes)
             .map_err(|e| DnfError::TokenGeneration(format!("RSA sign failed: {}", e)))?;

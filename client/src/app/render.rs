@@ -1,7 +1,7 @@
 use eframe::egui;
 
 use super::{DnfLoginApp, THUMB_H, THUMB_W};
-use crate::config::BgFillMode;
+use crate::config::{BgFillMode, BgMode};
 
 /// Threshold to distinguish a drag from a click.
 const DRAG_THRESHOLD: f32 = 3.0;
@@ -75,11 +75,15 @@ impl DnfLoginApp {
 
 // Background & thumbnail rendering
 impl DnfLoginApp {
-    /// Paints the current background image (or a solid fallback) plus a dim overlay.
+    /// Paints the current background.
     /// Rendering follows `self.config.bg_fill_mode`.
     pub(super) fn paint_background(&self, ui: &mut egui::Ui, rect: egui::Rect) {
         let p = ui.painter();
-        if let Some(Some(bg)) = self.bgs.get(self.current_bg) {
+        let source = match self.config.bg_mode {
+            BgMode::Image => self.bgs.get(self.current_bg).and_then(|t| t.as_ref()),
+            BgMode::Video => self.video_texture.as_ref(),
+        };
+        if let Some(bg) = source {
             let [tw, th] = bg.size();
             let tex_w = tw as f32;
             let tex_h = th as f32;
@@ -174,16 +178,26 @@ impl DnfLoginApp {
 
     /// Draws the background thumbnail switcher strip along the bottom edge.
     /// Supports horizontal scroll when thumbnails exceed the available width.
+    /// In video mode the strip iterates loaded videos; in image mode, image thumbnails.
     pub(super) fn draw_thumbnail_strip(&mut self, ui: &mut egui::Ui, screen: egui::Rect) {
         let tw = THUMB_W as f32;
         let th = THUMB_H as f32;
         let gap = 7.0;
         let pad_x = 16.0;
         let pad_y = 12.0;
-        // Space reserved at the right edge for the version label.
-        let version_reserve = 58.0;
+        // Reserves a narrow column at the right for the version label and the
+        // toggle pill stacked above it.
+        let version_reserve = 112.0;
         let uv = egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0));
-        let n = self.bg_thumbs.len();
+        let mode = self.config.bg_mode;
+        let n = match mode {
+            BgMode::Image => self.bg_thumbs.len(),
+            BgMode::Video => self.video_thumbs.len(),
+        };
+        let active_idx = match mode {
+            BgMode::Image => self.current_bg,
+            BgMode::Video => self.current_video,
+        };
 
         let strip_x = screen.min.x + pad_x;
         let strip_y = screen.max.y - th - pad_y;
@@ -271,13 +285,17 @@ impl DnfLoginApp {
             );
             let resp = ui.allocate_rect(visible, egui::Sense::click());
 
-            if let Some(Some(thumb)) = self.bg_thumbs.get(i) {
+            let thumb = match mode {
+                BgMode::Image => self.bg_thumbs.get(i).and_then(|t| t.as_ref()),
+                BgMode::Video => self.video_thumbs.get(i).and_then(|t| t.as_ref()),
+            };
+            if let Some(thumb) = thumb {
                 painter.image(thumb.id(), r, uv, egui::Color32::WHITE);
             } else {
                 painter.rect_filled(r, egui::CornerRadius::same(4), Self::c_card());
             }
 
-            let is_active = i == self.current_bg;
+            let is_active = i == active_idx;
             let border_color = if is_active {
                 Self::c_thumb_active()
             } else if resp.hovered() {
@@ -302,10 +320,18 @@ impl DnfLoginApp {
             }
 
             if resp.clicked() && self.thumb_drag_distance < DRAG_THRESHOLD {
-                self.current_bg = i;
-                self.config.bg_index = i;
+                match mode {
+                    BgMode::Image => {
+                        self.current_bg = i;
+                        self.config.bg_index = i;
+                    }
+                    BgMode::Video => {
+                        self.current_video = i;
+                        self.config.bg_video_index = i;
+                    }
+                }
                 if let Err(e) = self.config.save() {
-                    tracing::warn!("Failed to save bg_index: {}", e);
+                    tracing::warn!("Failed to save bg selection: {}", e);
                 }
                 // Scroll the selected thumbnail into view.
                 let thumb_left = i as f32 * (tw + gap);
@@ -335,6 +361,8 @@ impl DnfLoginApp {
             );
         }
 
+        self.draw_bg_mode_pill(ui, screen);
+
         ui.painter().text(
             screen.max - egui::vec2(12.0, 8.0),
             egui::Align2::RIGHT_BOTTOM,
@@ -342,5 +370,103 @@ impl DnfLoginApp {
             egui::FontId::proportional(11.0),
             Self::c_text3(),
         );
+    }
+
+    /// Draws a small two-segment pill that toggles between image and video
+    /// backgrounds. Stacked directly above the version label so the bottom
+    /// thumbnail strip can extend further right.
+    fn draw_bg_mode_pill(&mut self, ui: &mut egui::Ui, screen: egui::Rect) {
+        let pill_w = 96.0;
+        let pill_h = 20.0;
+        let right_margin = 12.0;
+        let version_baseline = 8.0;
+        // Approximate height of the 11pt version label, plus a small visual gap.
+        let version_band = 13.0;
+        let stack_gap = 4.0;
+
+        let pill_max_x = screen.max.x - right_margin;
+        let pill_min_x = pill_max_x - pill_w;
+        let pill_max_y = screen.max.y - version_baseline - version_band - stack_gap;
+        let pill_min_y = pill_max_y - pill_h;
+        let pill_rect = egui::Rect::from_min_max(
+            egui::pos2(pill_min_x, pill_min_y),
+            egui::pos2(pill_max_x, pill_max_y),
+        );
+
+        let painter = ui.painter();
+        painter.rect_filled(
+            pill_rect,
+            egui::CornerRadius::same(10),
+            Self::c_thumb_inactive(),
+        );
+
+        let seg_w = pill_w / 2.0;
+        let img_seg = egui::Rect::from_min_size(pill_rect.min, egui::vec2(seg_w, pill_h));
+        let vid_seg = egui::Rect::from_min_size(
+            egui::pos2(pill_rect.min.x + seg_w, pill_rect.min.y),
+            egui::vec2(seg_w, pill_h),
+        );
+
+        let active_seg = match self.config.bg_mode {
+            BgMode::Image => img_seg,
+            BgMode::Video => vid_seg,
+        };
+        let active_corners = match self.config.bg_mode {
+            BgMode::Image => egui::CornerRadius {
+                nw: 10,
+                sw: 10,
+                ne: 0,
+                se: 0,
+            },
+            BgMode::Video => egui::CornerRadius {
+                nw: 0,
+                sw: 0,
+                ne: 10,
+                se: 10,
+            },
+        };
+        painter.rect_filled(active_seg, active_corners, Self::c_thumb_active());
+
+        let label_font = egui::FontId::proportional(11.0);
+        let img_color = if self.config.bg_mode == BgMode::Image {
+            egui::Color32::WHITE
+        } else {
+            Self::c_text3()
+        };
+        let vid_color = if self.config.bg_mode == BgMode::Video {
+            egui::Color32::WHITE
+        } else {
+            Self::c_text3()
+        };
+        painter.text(
+            img_seg.center(),
+            egui::Align2::CENTER_CENTER,
+            self.tr.bg_toggle_image,
+            label_font.clone(),
+            img_color,
+        );
+        painter.text(
+            vid_seg.center(),
+            egui::Align2::CENTER_CENTER,
+            self.tr.bg_toggle_video,
+            label_font,
+            vid_color,
+        );
+
+        let img_resp = ui.allocate_rect(img_seg, egui::Sense::click());
+        let vid_resp = ui.allocate_rect(vid_seg, egui::Sense::click());
+
+        let prev_mode = self.config.bg_mode;
+        if img_resp.clicked() {
+            self.config.bg_mode = BgMode::Image;
+        }
+        if vid_resp.clicked() {
+            self.config.bg_mode = BgMode::Video;
+        }
+        if self.config.bg_mode != prev_mode
+            && let Err(e) = self.config.save()
+        {
+            tracing::warn!("Failed to save bg_mode: {}", e);
+        }
     }
 }

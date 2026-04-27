@@ -137,7 +137,8 @@ impl DnfLoginApp {
                     self.message_is_error = false;
                     self.settings_server_url = self.config.server_url.clone();
                     self.settings_aes_key = self.config.aes_key.clone();
-                    self.settings_bg_path = self.config.bg_custom_path.clone();
+                    self.settings_pic_path = self.config.bg_pic_path.clone();
+                    self.settings_vid_path = self.config.bg_vid_path.clone();
                 }
             });
             cols[3].vertical_centered(|ui| {
@@ -390,47 +391,60 @@ impl DnfLoginApp {
                 ui.add_space(13.0);
 
                 ui.add(Self::text_input(
-                    tr.bg_custom_path_label,
-                    &mut self.settings_bg_path,
-                    tr.bg_custom_path_hint,
+                    tr.bg_pic_path_label,
+                    &mut self.settings_pic_path,
+                    tr.bg_pic_path_hint,
                 ));
                 ui.add_space(3.0);
                 ui.label(
-                    egui::RichText::new(tr.bg_custom_path_help)
+                    egui::RichText::new(tr.bg_pic_path_help)
                         .size(11.5)
                         .color(Self::c_text3()),
                 );
                 ui.add_space(10.0);
 
+                ui.add(Self::text_input(
+                    tr.bg_vid_path_label,
+                    &mut self.settings_vid_path,
+                    tr.bg_vid_path_hint,
+                ));
+                ui.add_space(3.0);
                 ui.label(
-                    egui::RichText::new(tr.bg_position_label)
-                        .size(13.0)
-                        .color(Self::c_text2()),
+                    egui::RichText::new(tr.bg_vid_path_help)
+                        .size(11.5)
+                        .color(Self::c_text3()),
                 );
-                ui.add_space(4.0);
-                ui.horizontal(|ui| {
-                    let old_prepend = self.config.bg_custom_prepend;
-                    ui.radio_value(
-                        &mut self.config.bg_custom_prepend,
-                        false,
-                        egui::RichText::new(tr.bg_position_append).size(13.5),
-                    );
-                    ui.add_space(8.0);
-                    ui.radio_value(
-                        &mut self.config.bg_custom_prepend,
-                        true,
-                        egui::RichText::new(tr.bg_position_prepend).size(13.5),
-                    );
-                    if self.config.bg_custom_prepend != old_prepend {
-                        let _ = self.config.save();
-                    }
-                });
                 ui.add_space(10.0);
 
                 if Self::primary_button_slim(ui, tr.bg_reload_btn, true) {
-                    self.config.bg_custom_path = self.settings_bg_path.trim().to_string();
+                    let pic = self.settings_pic_path.trim();
+                    let vid = self.settings_vid_path.trim();
+                    self.config.bg_pic_path = if pic.is_empty() {
+                        self.settings_pic_path = "assets/pic".to_string();
+                        "assets/pic".to_string()
+                    } else {
+                        pic.to_string()
+                    };
+                    self.config.bg_vid_path = if vid.is_empty() {
+                        self.settings_vid_path = "assets/vid".to_string();
+                        "assets/vid".to_string()
+                    } else {
+                        vid.to_string()
+                    };
                     let _ = self.config.save();
+
+                    let pic_count = Self::scan_image_dir(&self.config.bg_pic_path).len();
+                    let vid_count = super::video::scan_video_dir(&self.config.bg_vid_path).len();
+                    if pic_count == 0 && vid_count == 0 {
+                        self.message = Some(tr.bg_reload_empty.to_string());
+                        self.message_is_error = true;
+                    } else {
+                        self.message = Some(format!("{} / {}", pic_count, vid_count));
+                        self.message_is_error = false;
+                    }
+
                     self.start_bg_loading();
+                    self.start_video_loading();
                 }
 
                 ui.add_space(10.0);
