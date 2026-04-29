@@ -187,10 +187,8 @@ impl DnfLoginApp {
         cancel_label: &str,
         loading: Option<&str>,
     ) -> Option<bool> {
-        let overlay_layer = egui::LayerId::new(
-            egui::Order::Foreground,
-            egui::Id::new(format!("{id}_overlay")),
-        );
+        let overlay_layer =
+            egui::LayerId::new(egui::Order::Middle, egui::Id::new(format!("{id}_overlay")));
         ctx.layer_painter(overlay_layer).rect_filled(
             ctx.viewport_rect(),
             0.0,
@@ -264,5 +262,89 @@ impl DnfLoginApp {
             });
 
         action
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rect_shape_with_fill(
+        shape: &egui::epaint::ClippedShape,
+        fill: egui::Color32,
+    ) -> Option<egui::Rect> {
+        rect_in_shape_with_fill(&shape.shape, fill)
+    }
+
+    fn rect_in_shape_with_fill(shape: &egui::Shape, fill: egui::Color32) -> Option<egui::Rect> {
+        match shape {
+            egui::Shape::Rect(rect) if rect.fill == fill => Some(rect.rect),
+            egui::Shape::Vec(shapes) => shapes
+                .iter()
+                .find_map(|shape| rect_in_shape_with_fill(shape, fill)),
+            _ => None,
+        }
+    }
+
+    fn contains_dialog_frame(shape: &egui::Shape, screen: egui::Rect) -> bool {
+        match shape {
+            egui::Shape::Rect(rect) => {
+                rect.corner_radius == egui::CornerRadius::same(14)
+                    && rect.rect.contains(screen.center())
+                    && rect.rect.width() >= 340.0
+                    && rect.rect.width() < screen.width()
+                    && rect.rect.height() > 100.0
+            }
+            egui::Shape::Vec(shapes) => shapes
+                .iter()
+                .any(|shape| contains_dialog_frame(shape, screen)),
+            _ => false,
+        }
+    }
+
+    #[test]
+    fn confirm_dialog_overlay_is_painted_below_dialog() {
+        let ctx = egui::Context::default();
+        let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0));
+
+        let input = || egui::RawInput {
+            screen_rect: Some(screen),
+            ..Default::default()
+        };
+        let show_dialog = |ui: &mut egui::Ui| {
+            DnfLoginApp::confirm_dialog(
+                ui.ctx(),
+                "test_close_dialog",
+                "Game Already Running",
+                "DNF.exe is already running.",
+                "Close and continue",
+                "Cancel",
+                None,
+            );
+        };
+
+        // The first frame is egui's sizing pass for a newly-created Window.
+        let _ = ctx.run_ui(input(), show_dialog);
+        let output = ctx.run_ui(input(), show_dialog);
+
+        let overlay_idx = output
+            .shapes
+            .iter()
+            .position(|shape| {
+                rect_shape_with_fill(shape, egui::Color32::from_black_alpha(140))
+                    .is_some_and(|rect| rect == screen)
+            })
+            .expect("confirm dialog should paint a full-screen overlay");
+
+        let dialog_idx = output
+            .shapes
+            .iter()
+            .position(|shape| contains_dialog_frame(&shape.shape, screen))
+            .expect("confirm dialog should paint its frame");
+
+        assert!(
+            overlay_idx < dialog_idx,
+            "overlay must be painted before the dialog frame so it cannot cover the dialog"
+        );
     }
 }
