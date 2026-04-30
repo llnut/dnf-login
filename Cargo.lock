@@ -764,7 +764,7 @@ dependencies = [
 
 [[package]]
 name = "dnf-client"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "dnf-shared",
@@ -786,7 +786,7 @@ dependencies = [
 
 [[package]]
 name = "dnf-gate-server"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -804,7 +804,7 @@ dependencies = [
 
 [[package]]
 name = "dnf-shared"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1503,7 +1503,7 @@ checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
 
 [[package]]
 name = "hook-common"
-version = "0.3.1"
+version = "0.4.0"
 
 [[package]]
 name = "http"
@@ -1757,7 +1757,7 @@ dependencies = [
 
 [[package]]
 name = "ijl15-hook"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "hook-common",
  "serde",
@@ -3879,7 +3879,7 @@ dependencies = [
 
 [[package]]
 name = "test-plugin"
-version = "0.3.1"
+version = "0.4.0"
 
 [[package]]
 name = "thiserror"

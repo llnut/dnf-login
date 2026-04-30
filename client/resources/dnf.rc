@@ -3,8 +3,8 @@
 
 // Version information
 1 VERSIONINFO
-FILEVERSION     0,3,1,0
-PRODUCTVERSION  0,3,1,0
+FILEVERSION     0,4,0,0
+PRODUCTVERSION  0,4,0,0
 FILEFLAGSMASK   0x3fL
 FILEFLAGS       0x0L
 FILEOS          0x40004L
@@ -17,12 +17,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "DNF Launcher Project"
             VALUE "FileDescription", "DNF Launcher"
-            VALUE "FileVersion", "0.3.1.0"
+            VALUE "FileVersion", "0.4.0.0"
             VALUE "InternalName", "llnut launcher"
             VALUE "LegalCopyright", "Copyright (C) 2026 llnut"
             VALUE "OriginalFilename", "dnf-launcher.exe"
             VALUE "ProductName", "llnut launcher"
-            VALUE "ProductVersion", "0.3.1.0"
+            VALUE "ProductVersion", "0.4.0.0"
         END
     END
     BLOCK "VarFileInfo"
