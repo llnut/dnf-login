@@ -23,8 +23,8 @@ use core::ptr;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 use hook_common::{
-    BOOL, DWORD, HMODULE, TrampolineSlot, fmt_hex32, install_hook, log_line, parse_ipv4,
-    parse_ipv4_octets, resolve,
+    BOOL, DWORD, HMODULE, TrampolineSlot, finalize_trampoline_pool, fmt_hex32, install_hook,
+    log_line, parse_ipv4, parse_ipv4_octets, resolve,
 };
 use serde::Deserialize;
 
@@ -257,7 +257,6 @@ unsafe fn build_plugin_path(hmodule: HMODULE, out: &mut [u16; 600]) -> usize {
     let (dir_ptr, path_len) = if env_len > 0 {
         (&env_path[..], env_len)
     } else {
-        // Default: "plugins"
         let default: [u16; 7] = [
             b'p' as u16,
             b'l' as u16,
@@ -277,7 +276,6 @@ unsafe fn build_plugin_path(hmodule: HMODULE, out: &mut [u16; 600]) -> usize {
 
     if is_absolute {
         let n = wcopy(&mut out[..], &dir_ptr[..path_len]);
-        // Strip trailing backslash
         let n = if n > 0 && out[n - 1] == b'\\' as u16 {
             n - 1
         } else {
@@ -294,12 +292,11 @@ unsafe fn build_plugin_path(hmodule: HMODULE, out: &mut [u16; 600]) -> usize {
     if exe_len == 0 || exe_len >= 520 {
         return 0;
     }
-    // Find last backslash to get directory
     let last_sep = out[..exe_len]
         .iter()
         .rposition(|&c| c == b'\\' as u16 || c == b'/' as u16)
         .unwrap_or(0);
-    let base = last_sep + 1; // position after the last separator
+    let base = last_sep + 1;
 
     let n = wcopy(&mut out[base..], &dir_ptr[..path_len]);
     let total = base + n;
@@ -336,7 +333,6 @@ unsafe fn load_plugins(hmodule: HMODULE) {
     }
     unsafe { log_line(&[b"[plugins] path=", &path_ascii[..ascii_len], b"\n"]) };
 
-    // Build search pattern: dir\*.dll\0
     let mut pattern = [0u16; 620];
     let mut pos = wcopy(&mut pattern, &path_buf[..path_len]);
     pattern[pos] = b'\\' as u16;
@@ -368,7 +364,6 @@ unsafe fn load_plugins(hmodule: HMODULE) {
             && (fd_ref.dw_file_attributes & 0x10) == 0
             && ends_with_dll(&fd_ref.c_file_name[..name_len])
         {
-            // Build full path: dir\filename\0
             let mut full = [0u16; 600];
             let mut p = wcopy(&mut full, &path_buf[..path_len]);
             // Skip if path + backslash + filename + null would overflow
@@ -457,20 +452,21 @@ pub extern "system" fn ijlErrorStr() -> *const i8 {
     c"".as_ptr()
 }
 
+/// Subset of GameSettings.toml that ijl15-hook consumes. Other fields are
+/// tolerated as unknown.
 #[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct GameServerConfig {
+struct IjlConfig {
     game_server_ip: Option<String>,
 }
 
-/// Reads `game_server_ip` from `GameServerIP.toml` in the working directory.
+/// Reads `game_server_ip` from `GameSettings.toml` in the working directory.
 ///
 /// # Safety
 /// Calls Win32 file I/O functions.
 unsafe fn read_ip_from_toml(out: &mut [u8; 64]) -> usize {
     let h = unsafe {
         CreateFileA(
-            c"GameServerIP.toml".as_ptr(),
+            c"GameSettings.toml".as_ptr(),
             0x8000_0000, // GENERIC_READ
             1,           // FILE_SHARE_READ
             ptr::null_mut(),
@@ -483,7 +479,7 @@ unsafe fn read_ip_from_toml(out: &mut [u8; 64]) -> usize {
     if h.is_null() || h as usize == INVALID_HANDLE_VALUE {
         return 0;
     }
-    let mut buf = [0u8; 512];
+    let mut buf = [0u8; 4096];
     let mut bytes_read: DWORD = 0;
     let ok = unsafe {
         ReadFile(
@@ -507,7 +503,7 @@ unsafe fn read_ip_from_toml(out: &mut [u8; 64]) -> usize {
         Ok(s) => s,
         Err(_) => return 0,
     };
-    let config: GameServerConfig = match toml::from_str(content) {
+    let config: IjlConfig = match toml::from_str(content) {
         Ok(c) => c,
         Err(_) => return 0,
     };
@@ -543,7 +539,7 @@ unsafe fn resolve_server_ip(ip_buf: &mut [u8; 64]) -> usize {
         unsafe { log_line(&[b"[on_attach] GAME_SERVER_IP invalid\n"]) };
     }
 
-    // Fall back to GameServerIP.toml.
+    // Fall back to GameSettings.toml.
     let toml_len = unsafe { read_ip_from_toml(ip_buf) };
     if toml_len > 0 {
         let ip_slice = &ip_buf[..toml_len];
@@ -616,6 +612,9 @@ unsafe fn on_attach(hmodule: HMODULE) {
 
     // 2. Load plugins
     unsafe { load_plugins(hmodule) };
+
+    // Freeze the trampoline pool now that no further hooks will be installed.
+    unsafe { finalize_trampoline_pool() };
 
     unsafe { log_line(&[b"[on_attach] done\n"]) };
 }
