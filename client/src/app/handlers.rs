@@ -20,6 +20,7 @@ impl DnfLoginApp {
             error_key::USER_EXISTS => tr.err_server_user_exists,
             error_key::WRONG_CREDENTIALS => tr.err_server_wrong_credentials,
             error_key::ACCOUNT_BANNED => tr.err_server_account_banned,
+            error_key::REGISTRATION_CLOSED => tr.err_server_registration_closed,
             _ => {
                 tracing::warn!("Unknown server error key: {}", error);
                 tr.err_server_unknown

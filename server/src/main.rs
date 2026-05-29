@@ -58,6 +58,7 @@ async fn main() -> anyhow::Result<()> {
         aes_cipher: Arc::new(aes_cipher),
         rate_limiter: Arc::new(Mutex::new(HashMap::new())),
         game_server_ip: config.game_server_ip.clone(),
+        registration_open: config.registration_open,
     };
 
     let app = Router::new()

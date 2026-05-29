@@ -60,6 +60,7 @@ pub mod error_key {
     pub const USER_EXISTS: &str = "user_exists";
     pub const WRONG_CREDENTIALS: &str = "wrong_credentials";
     pub const ACCOUNT_BANNED: &str = "account_banned";
+    pub const REGISTRATION_CLOSED: &str = "registration_closed";
     pub const FAIL: &str = "fail";
 }
 

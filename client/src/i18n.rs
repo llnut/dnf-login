@@ -143,6 +143,7 @@ pub struct Tr {
     pub err_server_user_exists: &'static str,
     pub err_server_wrong_credentials: &'static str,
     pub err_server_account_banned: &'static str,
+    pub err_server_registration_closed: &'static str,
     pub err_server_unknown: &'static str,
 
     // Dynamic error prefixes (caller appends ": " + detail)
@@ -206,7 +207,7 @@ const EN: Tr = Tr {
     warn_server_not_configured: "Server not configured \u{2014} open Settings to connect.",
 
     create_account_title: "Create Account",
-    qq_optional: "QQ NUMBER  (optional)",
+    qq_optional: "QQ NUMBER (optional)",
     hint_choose_username: "Enter username",
     hint_choose_password: "Enter password",
     hint_re_enter_password: "Re-enter password",
@@ -279,6 +280,7 @@ const EN: Tr = Tr {
     err_server_user_exists: "This username is already taken.",
     err_server_wrong_credentials: "Incorrect username or password.",
     err_server_account_banned: "This account has been banned.",
+    err_server_registration_closed: "Registration is currently closed.",
     err_server_unknown: "Operation failed. Please try again.",
 
     err_mac_prefix: "Failed to get MAC address",
@@ -401,6 +403,7 @@ const ZH_CN: Tr = Tr {
     err_server_user_exists: "该用户名已被注册。",
     err_server_wrong_credentials: "用户名或密码错误。",
     err_server_account_banned: "该账号已被封禁。",
+    err_server_registration_closed: "当前未开放注册。",
     err_server_unknown: "操作失败，请重试。",
 
     err_mac_prefix: "获取 MAC 地址失败",
@@ -478,11 +481,11 @@ const ZH_TW: Tr = Tr {
     game_server_ip_label: "啟動時設定 GAME_SERVER_IP",
     game_server_ip_help: "啟用後，啟動器會取得遊戲伺服器 IP，並透過環境變數 GAME_SERVER_IP 傳遞給 DNF.exe。",
 
-    plugins_path_label: "插件路徑",
+    plugins_path_label: "外掛路徑",
     plugins_path_hint: "例：plugins",
-    plugins_path_help: "該目錄中的 DLL 檔案將在遊戲啟動時注入 DNF.exe，路徑相對於啟動器所在目錄。",
+    plugins_path_help: "此資料夾中的 DLL 檔案會在遊戲啟動時注入 DNF.exe，路徑相對於啟動器所在目錄。",
     plugin_inject_label: "啟用 DLL 注入",
-    plugin_inject_help: "開啟後，遊戲啟動時將自動把插件路徑中的 DLL 檔案注入 DNF.exe。",
+    plugin_inject_help: "啟用後，遊戲啟動時會自動將外掛路徑中的 DLL 檔案注入 DNF.exe。",
 
     bg_pic_path_label: "圖片資料夾",
     bg_pic_path_hint: "例：assets/pic",
@@ -523,6 +526,7 @@ const ZH_TW: Tr = Tr {
     err_server_user_exists: "此帳號已被註冊。",
     err_server_wrong_credentials: "帳號或密碼錯誤。",
     err_server_account_banned: "此帳號已被停權。",
+    err_server_registration_closed: "目前尚未開放註冊。",
     err_server_unknown: "操作失敗，請重試。",
 
     err_mac_prefix: "取得 MAC 位址失敗",
@@ -581,7 +585,7 @@ const JA: Tr = Tr {
 
     change_password_title: "パスワード変更",
     current_password: "現在のパスワード",
-    confirm_new_password: "新パスワード（確認）",
+    confirm_new_password: "新しいパスワード（確認）",
     change_password_btn: "変更する",
     hint_current_password: "現在のパスワードを入力",
     hint_enter_new_password: "新しいパスワードを入力",
@@ -590,7 +594,7 @@ const JA: Tr = Tr {
     bg_fill_mode_label: "表示方法",
     bg_fill_tile: "並べて表示",
     bg_fill_stretch: "拡大して表示",
-    bg_fill_fill: "フィル",
+    bg_fill_fill: "画面全体に表示",
     bg_fill_center: "中央に表示",
     bg_fill_fit: "画面に合わせる",
 
@@ -645,6 +649,7 @@ const JA: Tr = Tr {
     err_server_user_exists: "このユーザー名はすでに使用されています。",
     err_server_wrong_credentials: "ユーザー名またはパスワードが正しくありません。",
     err_server_account_banned: "このアカウントは利用停止されています。",
+    err_server_registration_closed: "現在、新規登録を受け付けていません。",
     err_server_unknown: "操作に失敗しました。もう一度お試しください。",
 
     err_mac_prefix: "MACアドレス取得失敗",
@@ -693,7 +698,7 @@ const KO: Tr = Tr {
     settings_link: "설정",
     warn_server_not_configured: "서버가 설정되지 않았습니다. 설정에서 연결 정보를 입력해 주세요.",
 
-    create_account_title: "계정 만들기",
+    create_account_title: "회원가입",
     qq_optional: "QQ 번호 (선택)",
     hint_choose_username: "아이디 입력",
     hint_choose_password: "비밀번호 입력",
@@ -716,8 +721,8 @@ const KO: Tr = Tr {
     bg_fill_center: "가운데",
     bg_fill_fit: "화면에 맞춤",
 
-    bg_toggle_image: "사진",
-    bg_toggle_video: "영상",
+    bg_toggle_image: "이미지",
+    bg_toggle_video: "동영상",
 
     game_server_ip_label: "실행 시 GAME_SERVER_IP 설정",
     game_server_ip_help: "활성화하면 런처가 게임 서버 IP를 가져와 환경 변수 GAME_SERVER_IP로 DNF.exe에 전달합니다.",
@@ -733,7 +738,7 @@ const KO: Tr = Tr {
     bg_pic_path_help: "폴더 내 모든 JPG 파일이 배경으로 사용됩니다. 경로는 실행 파일 기준 상대 경로입니다.",
     bg_vid_path_label: "동영상 폴더",
     bg_vid_path_hint: "예: assets/vid",
-    bg_vid_path_help: "폴더 내 모든 WebP 와 MP4 파일이 배경 동영상으로 사용됩니다. 경로는 실행 파일 기준 상대 경로입니다.",
+    bg_vid_path_help: "폴더 내 모든 WebP와 MP4 파일이 배경 동영상으로 사용됩니다. 경로는 실행 파일 기준 상대 경로입니다.",
     bg_reload_btn: "다시 불러오기",
     bg_reload_empty: "설정한 폴더에서 이미지와 동영상을 찾을 수 없습니다.",
 
@@ -767,6 +772,7 @@ const KO: Tr = Tr {
     err_server_user_exists: "이미 사용 중인 아이디입니다.",
     err_server_wrong_credentials: "아이디 또는 비밀번호가 올바르지 않습니다.",
     err_server_account_banned: "이 계정은 이용이 정지되었습니다.",
+    err_server_registration_closed: "현재 회원가입을 받지 않고 있습니다.",
     err_server_unknown: "작업에 실패했습니다. 다시 시도해 주세요.",
 
     err_mac_prefix: "MAC 주소 확인 실패",
@@ -780,7 +786,7 @@ const KO: Tr = Tr {
     change_password_success: "비밀번호가 변경되었습니다. 다시 로그인해 주세요.",
 
     confirm_close_dnf_title: "게임 실행 중",
-    confirm_close_dnf_msg: "DNF.exe가 이미 실행 중입니다.\n종료 후 새로 시작하시겠습니까?",
+    confirm_close_dnf_msg: "DNF.exe가 이미 실행 중입니다.\n종료하고 게임을 시작하시겠습니까?",
     confirm_close_yes: "종료 후 계속",
     confirm_close_no: "취소",
     closing_dnf: "DNF.exe 종료 중\u{2026}",

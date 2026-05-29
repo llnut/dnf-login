@@ -107,6 +107,7 @@ cargo build --release -p dnf-client --target x86_64-pc-windows-gnu
 | `INITIAL_CERA` | no | `1000` | |
 | `INITIAL_CERA_POINT` | no | `0` | |
 | `GAME_SERVER_IP` | no | | Reported to clients via the GET endpoint. Clients pass it to ijl15.dll as an environment variable. |
+| `REGISTRATION_OPEN` | no | `true` | When `false`, the server rejects new user registrations. |
 | `TLS_CERT_PATH` | no | | PEM certificate file (may include intermediate CA chain). TLS is enabled only when both `TLS_CERT_PATH` and `TLS_KEY_PATH` are set. |
 | `TLS_KEY_PATH` | no | | PEM private key file. |
 | `TLS_BIND_ADDRESS` | no | `0.0.0.0:5504` | HTTPS listener address. |

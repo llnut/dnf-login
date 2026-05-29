@@ -45,6 +45,9 @@ pub struct Config {
 
     /// Game server IP, reported to clients via GET /api/v1/game-server-ip.
     pub game_server_ip: Option<String>,
+
+    /// Whether the server accepts new user registration.
+    pub registration_open: bool,
 }
 
 impl Config {
@@ -67,6 +70,7 @@ impl Config {
     ///   TLS_KEY_PATH         — PEM private key file
     ///   TLS_BIND_ADDRESS     — HTTPS listen address (default: 0.0.0.0:5504)
     ///   TLS_ONLY             — disable HTTP when TLS is active (default: false)
+    ///   REGISTRATION_OPEN    — accept new user registration (default: true)
     pub fn from_env() -> Result<Self> {
         dotenvy::dotenv().ok();
 
@@ -145,6 +149,11 @@ impl Config {
             })
             .transpose()?;
 
+        let registration_open = std::env::var("REGISTRATION_OPEN")
+            .ok()
+            .and_then(|v| v.parse::<bool>().ok())
+            .unwrap_or(true);
+
         Ok(Self {
             db,
             aes_key_hex,
@@ -157,6 +166,7 @@ impl Config {
             tls_bind_address,
             tls_only,
             game_server_ip,
+            registration_open,
         })
     }
 }

@@ -23,6 +23,7 @@ pub struct AppState {
     pub aes_cipher: Arc<dnf_shared::crypto::AesGcmCipher>,
     pub rate_limiter: Arc<Mutex<HashMap<IpAddr, (u32, Instant)>>>,
     pub game_server_ip: Option<String>,
+    pub registration_open: bool,
 }
 
 /// Main request handler for encrypted requests
@@ -137,6 +138,13 @@ async fn register(
     password_md5: &str,
     qq_number: Option<&str>,
 ) -> DnfResponse {
+    if !state.registration_open {
+        tracing::warn!(
+            "Registration rejected for {}: registration is closed",
+            username
+        );
+        return DnfResponse::error(error_key::REGISTRATION_CLOSED);
+    }
     match state
         .auth_service
         .register(username, password_md5, qq_number)
