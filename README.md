@@ -152,4 +152,4 @@ To disable plugin loading: uncheck the toggle in the settings screen, set `plugi
 
 ## License
 
-MIT License - see the [LICENSE](LICENSE) file for details.
+GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
