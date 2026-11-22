@@ -180,7 +180,7 @@ jobs:
           archive_name: ijl15-hook
           ext: .dll
           os: windows-latest
-          rust: stable-i686-gnu
+          rust: stable-x86_64-gnu
           target: i686-pc-windows-gnu
 
     steps:
@@ -278,12 +278,7 @@ jobs:
       if: matrix.hook_target
       shell: bash
       run: |
-        if [[ "${{ matrix.hook_target }}" == "i686-pc-windows-gnu" ]]; then
-          rustup toolchain install stable-i686-pc-windows-gnu --no-self-update
-          cargo +stable-i686-pc-windows-gnu build --release --target ${{ matrix.hook_target }} -p ijl15-hook
-        else
-          cargo build --release --target ${{ matrix.hook_target }} -p ijl15-hook
-        fi
+        cargo build --release --target ${{ matrix.hook_target }} -p ijl15-hook
         ls -lh "target/${{ matrix.hook_target }}/release/ijl15.dll"
 
     - name: Determine archive name
