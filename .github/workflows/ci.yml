@@ -263,7 +263,7 @@ jobs:
     - name: Test client configuration
       if: matrix.build == 'client-win-msvc-glow'
       shell: bash
-      run: cargo test --locked --target x86_64-pc-windows-msvc -p dnf-client --no-default-features --features glow config::tests
+      run: cargo test --locked --target x86_64-pc-windows-msvc -p dnf-client --no-default-features --features glow
 
     - name: Build ijl15-hook
       if: matrix.hook_target

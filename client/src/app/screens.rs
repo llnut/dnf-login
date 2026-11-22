@@ -33,6 +33,34 @@ impl DnfLoginApp {
     pub(super) fn show_login_screen(&mut self, ui: &mut egui::Ui) {
         let tr = self.t();
 
+        let busy = self.current_task.is_some();
+        let mut remove_account = None;
+        ui.add_enabled_ui(!busy, |ui| {
+            egui::ScrollArea::vertical().id_salt("saved_accounts").max_height(130.0).show(ui, |ui| {
+                for (name, _) in &self.saved_accounts {
+                    ui.horizontal(|ui| {
+                        let mut selected = self.selected_accounts.contains(name);
+                        if ui.checkbox(&mut selected, name).changed() {
+                            if selected { self.selected_accounts.insert(name.clone()); }
+                            else { self.selected_accounts.remove(name); }
+                        }
+                        if ui.small_button(tr.remove_account).clicked() {
+                            remove_account = Some(name.clone());
+                        }
+                    });
+                }
+            });
+        });
+        if let Some(name) = remove_account {
+            match self.storage.remove(&name) {
+                Ok(()) => {
+                    self.saved_accounts.retain(|(account, _)| account != &name);
+                    self.selected_accounts.remove(&name);
+                }
+                Err(error) => self.set_error(error.to_string()),
+            }
+        }
+
         ui.vertical_centered(|ui| {
             Self::draw_app_icon(ui, self.app_icon.as_ref());
             ui.add_space(2.0);
@@ -79,14 +107,55 @@ impl DnfLoginApp {
         );
         ui.add_space(16.0);
 
-        let login_enabled =
-            !self.username.is_empty() && !self.password.is_empty() && self.current_task.is_none();
-        let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
+        ui.add_enabled_ui(!busy, |ui| {
+            ui.horizontal(|ui| {
+                if ui.add_enabled(!self.username.trim().is_empty() && !self.password.is_empty(),
+                    egui::Button::new(tr.save_btn)).clicked() {
+                    match self.storage.save(&self.username, &self.password, self.remember_password) {
+                        Ok(()) => {
+                            self.saved_accounts = self.storage.load_accounts().unwrap_or_default();
+                            if self.remember_password {
+                                self.selected_accounts.insert(self.username.clone());
+                            }
+                        }
+                        Err(error) => self.set_error(error.to_string()),
+                    }
+                }
+                if ui.button(tr.clear_btn).clicked() {
+                    self.username.clear();
+                    self.password.clear();
+                    self.remember_password = true;
+                }
+            });
+        });
 
-        if Self::primary_button(ui, tr.enter_game, login_enabled)
+        let has_current = !self.username.trim().is_empty() && !self.password.is_empty();
+        let selected_count = self.selected_accounts.len()
+            + usize::from(has_current && !self.selected_accounts.contains(&self.username));
+        let login_enabled = selected_count > 0 && self.current_task.is_none();
+        let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
+        let launch_label = format!("{} ({})", tr.launch_selected, selected_count);
+
+        if Self::primary_button(ui, &launch_label, login_enabled)
             || (enter_pressed && login_enabled)
         {
-            self.handle_login();
+            if self.config.allow_multi_instance {
+                self.handle_batch_login();
+            } else if self.selected_accounts.is_empty() {
+                self.handle_login();
+            } else if selected_count == 1 {
+                if !has_current {
+                    if let Some((name, password)) = self.saved_accounts.iter()
+                        .find(|(name, _)| self.selected_accounts.contains(name)) {
+                        self.username = name.clone();
+                        self.password = password.clone();
+                        self.remember_password = true;
+                    }
+                }
+                self.handle_login();
+            } else {
+                self.set_error(tr.multi_instance_help);
+            }
         }
 
         if matches!(self.current_task, Some(TaskType::Login)) {

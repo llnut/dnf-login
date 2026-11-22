@@ -26,6 +26,61 @@ use crate::{
 
 // Action handlers
 impl DnfLoginApp {
+    pub(super) fn handle_batch_login(&mut self) {
+        if self.current_task.is_some() { return; }
+        let mut accounts: Vec<(String, String)> = self.saved_accounts.iter()
+            .filter(|(name, _)| self.selected_accounts.contains(name)).cloned().collect();
+        if !self.username.trim().is_empty() && !self.password.is_empty() {
+            accounts.retain(|(name, _)| name != &self.username);
+            accounts.push((self.username.clone(), self.password.clone()));
+        }
+        if accounts.is_empty() { return; }
+        if !self.config.allow_multi_instance && accounts.len() > 1 {
+            self.set_error(self.t().multi_instance_help);
+            return;
+        }
+        let Some(client) = self.client.clone() else {
+            self.set_error(self.t().err_client_not_init);
+            return;
+        };
+        let mac = match platform::get_mac_address() {
+            Ok(mac) => mac,
+            Err(error) => { self.set_error(error.to_string()); return; }
+        };
+        if !self.username.is_empty() && !self.password.is_empty() {
+            if let Err(error) = self.storage.save(&self.username, &self.password, self.remember_password) {
+                self.set_error(error.to_string());
+                return;
+            }
+            self.saved_accounts = self.storage.load_accounts().unwrap_or_default();
+        }
+        let config = self.config.clone();
+        let tx = self.task_tx.clone();
+        self.message = None;
+        self.current_task = Some(TaskType::Login);
+        self.runtime.spawn(async move {
+            let ip = if config.plugin_inject_enabled && config.game_server_ip_enabled {
+                match client.get_game_server_ip().await {
+                    Ok(Some(ip)) => ip,
+                    _ => crate::network::resolve_server_ip(&config.server_url).await.unwrap_or_default(),
+                }
+            } else { String::new() };
+            let mut results = Vec::new();
+            for (username, password) in accounts {
+                let result = async {
+                    let response = client.login(&username, &md5_hash(&password), &mac).await?;
+                    if !response.success {
+                        anyhow::bail!("{}", response.error.unwrap_or_else(|| "Login failed".to_string()));
+                    }
+                    let token = response.token.ok_or_else(|| anyhow::anyhow!("Missing login token"))?;
+                    DnfLauncher::launch_with_token(&token, &config.plugins_path, config.plugin_inject_enabled, &ip)
+                }.await;
+                results.push((username, result));
+            }
+            let _ = tx.send(TaskResult::BatchFinished(results));
+        });
+    }
+
     fn translate_server_error(&self, error: &str) -> &'static str {
         let tr = self.t();
         match error {
@@ -262,6 +317,15 @@ impl DnfLoginApp {
     pub(super) fn handle_task_result(&mut self, result: TaskResult) {
         let tr = self.t();
         match result {
+            TaskResult::BatchFinished(results) => {
+                self.current_task = None;
+                let failed = results.iter().any(|(_, result)| result.is_err());
+                self.message = Some(results.into_iter().map(|(name, result)| match result {
+                    Ok(()) => format!("{}: {}", name, tr.login_success),
+                    Err(error) => format!("{}: {}", name, error),
+                }).collect::<Vec<_>>().join("\n"));
+                self.message_is_error = failed;
+            }
             TaskResult::Login(res, game_server_ip) => {
                 self.current_task = None;
                 match res {
@@ -285,6 +349,7 @@ impl DnfLoginApp {
                                     self.password = p;
                                 }
                                 self.set_success(tr.login_success);
+                                self.saved_accounts = self.storage.load_accounts().unwrap_or_default();
 
                                 let plugins_path = self.config.plugins_path.clone();
                                 let inject_enabled = self.config.plugin_inject_enabled;

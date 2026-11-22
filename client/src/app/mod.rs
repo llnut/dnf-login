@@ -61,6 +61,7 @@ pub(super) enum TaskType {
 }
 
 pub(super) enum TaskResult {
+    BatchFinished(Vec<(String, Result<()>)>),
     Login(Result<crate::network::LoginResponse>, Option<String>),
     Register(Result<crate::network::RegisterResponse>),
     ChangePassword(Result<crate::network::SimpleResponse>),
@@ -140,6 +141,8 @@ pub struct DnfLoginApp {
     pub(super) username: String,
     pub(super) password: String,
     pub(super) remember_password: bool,
+    pub(super) saved_accounts: Vec<(String, String)>,
+    pub(super) selected_accounts: std::collections::BTreeSet<String>,
 
     pub(super) register_username: String,
     pub(super) register_password: String,
@@ -249,6 +252,7 @@ impl DnfLoginApp {
         };
 
         let settings_server_url = config.server_url.clone();
+        let saved_accounts = storage.load_accounts().unwrap_or_default();
         let settings_aes_key = config.aes_key.clone();
         let settings_pic_path = config.bg_pic_path.clone();
         let settings_vid_path = config.bg_vid_path.clone();
@@ -313,6 +317,8 @@ impl DnfLoginApp {
             username,
             password,
             remember_password,
+            saved_accounts,
+            selected_accounts: std::collections::BTreeSet::new(),
             register_username: String::new(),
             register_password: String::new(),
             register_password_confirm: String::new(),
