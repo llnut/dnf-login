@@ -154,6 +154,7 @@ impl DnfLoginApp {
                     self.settings_aes_key = self.config.aes_key.clone();
                     self.settings_pic_path = self.config.bg_pic_path.clone();
                     self.settings_vid_path = self.config.bg_vid_path.clone();
+                    self.settings_allow_multi_instance = self.config.allow_multi_instance;
                 }
             });
             cols[3].vertical_centered(|ui| {
@@ -521,6 +522,20 @@ impl DnfLoginApp {
                 ui.painter()
                     .rect_filled(sep, egui::CornerRadius::ZERO, Self::c_border());
                 ui.add_space(13.0);
+
+                ui.checkbox(
+                    &mut self.settings_allow_multi_instance,
+                    egui::RichText::new(tr.multi_instance_label)
+                        .size(13.5)
+                        .color(Self::c_text2()),
+                );
+                ui.add_space(3.0);
+                ui.label(
+                    egui::RichText::new(tr.multi_instance_help)
+                        .size(11.5)
+                        .color(Self::c_text3()),
+                );
+                ui.add_space(10.0);
 
                 ui.checkbox(
                     &mut self.settings_plugin_inject_enabled,

@@ -135,6 +135,7 @@ pub struct DnfLoginApp {
     pub(super) settings_plugins_path: String,
     pub(super) settings_plugin_inject_enabled: bool,
     pub(super) settings_game_server_ip_enabled: bool,
+    pub(super) settings_allow_multi_instance: bool,
 
     pub(super) username: String,
     pub(super) password: String,
@@ -254,6 +255,7 @@ impl DnfLoginApp {
         let settings_plugins_path = config.plugins_path.clone();
         let settings_plugin_inject_enabled = config.plugin_inject_enabled;
         let settings_game_server_ip_enabled = config.game_server_ip_enabled;
+        let settings_allow_multi_instance = config.allow_multi_instance;
         let bg_index = config.bg_index;
         let tr = translations(config.language);
         let app_icon = Self::load_app_icon(&cc.egui_ctx);
@@ -307,6 +309,7 @@ impl DnfLoginApp {
             settings_plugins_path,
             settings_plugin_inject_enabled,
             settings_game_server_ip_enabled,
+            settings_allow_multi_instance,
             username,
             password,
             remember_password,

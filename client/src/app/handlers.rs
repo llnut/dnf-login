@@ -229,6 +229,7 @@ impl DnfLoginApp {
             plugins_path: self.settings_plugins_path.trim().to_string(),
             plugin_inject_enabled: self.settings_plugin_inject_enabled,
             game_server_ip_enabled: self.settings_game_server_ip_enabled,
+            allow_multi_instance: self.settings_allow_multi_instance,
             ..self.config.clone()
         };
 
@@ -289,7 +290,9 @@ impl DnfLoginApp {
                                 let inject_enabled = self.config.plugin_inject_enabled;
                                 let server_ip = game_server_ip.unwrap_or_default();
 
-                                if platform::is_process_running("DNF.exe").unwrap_or(false) {
+                                if !self.config.allow_multi_instance
+                                    && platform::is_process_running("DNF.exe").unwrap_or(false)
+                                {
                                     self.pending_launch = Some(PendingLaunch {
                                         token,
                                         plugins_path,

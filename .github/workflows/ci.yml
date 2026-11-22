@@ -260,6 +260,11 @@ jobs:
         ls -lh "$bin"
         echo "BIN=$bin" >> $GITHUB_ENV
 
+    - name: Test client configuration
+      if: matrix.build == 'client-win-msvc-glow'
+      shell: bash
+      run: cargo test --locked --target x86_64-pc-windows-msvc -p dnf-client --no-default-features --features glow config::tests
+
     - name: Build ijl15-hook
       if: matrix.hook_target
       shell: bash

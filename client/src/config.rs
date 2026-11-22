@@ -77,6 +77,9 @@ pub struct AppConfig {
     /// and passes it as the GAME_SERVER_IP environment variable to DNF.exe.
     #[serde(default = "default_true")]
     pub game_server_ip_enabled: bool,
+    /// Skip the existing-game check so another DNF instance can be launched.
+    #[serde(default)]
+    pub allow_multi_instance: bool,
 }
 
 fn default_true() -> bool {
@@ -106,6 +109,7 @@ impl Default for AppConfig {
             plugins_path: "plugins".to_string(),
             plugin_inject_enabled: true,
             game_server_ip_enabled: true,
+            allow_multi_instance: false,
         }
     }
 }
@@ -289,6 +293,7 @@ game_server_ip_enabled = true
         assert_eq!(config.bg_index, 0);
         assert_eq!(config.bg_pic_path, "assets/bg");
         assert_eq!(config.bg_vid_path, "assets/vid");
+        assert!(!config.allow_multi_instance);
     }
 
     #[test]
@@ -334,5 +339,18 @@ game_server_ip_enabled = true
         let serialized = toml::to_string_pretty(&config).unwrap();
         let deserialized: AppConfig = toml::from_str(&serialized).unwrap();
         assert_eq!(deserialized.bg_index, 7);
+    }
+
+    #[test]
+    fn test_multi_instance_round_trip() {
+        for enabled in [false, true] {
+            let config = AppConfig {
+                allow_multi_instance: enabled,
+                ..AppConfig::default()
+            };
+            let serialized = toml::to_string_pretty(&config).unwrap();
+            let parsed: AppConfig = toml::from_str(&serialized).unwrap();
+            assert_eq!(parsed.allow_multi_instance, enabled);
+        }
     }
 }

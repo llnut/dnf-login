@@ -105,6 +105,8 @@ pub struct Tr {
     pub bg_toggle_video: &'static str,
 
     // Game server IP
+    pub multi_instance_label: &'static str,
+    pub multi_instance_help: &'static str,
     pub game_server_ip_label: &'static str,
     pub game_server_ip_help: &'static str,
 
@@ -248,6 +250,8 @@ const EN: Tr = Tr {
     bg_toggle_video: "Video",
 
     game_server_ip_label: "Set GAME_SERVER_IP on launch",
+    multi_instance_label: "Allow multiple game instances",
+    multi_instance_help: "When enabled, launch another game without checking for or closing existing DNF.exe instances. Save to apply.",
     game_server_ip_help: "When enabled, the launcher fetches the game server IP and passes it to DNF.exe via the GAME_SERVER_IP environment variable.",
 
     plugins_path_label: "PLUGIN PATH",
@@ -371,6 +375,8 @@ const ZH_CN: Tr = Tr {
     bg_toggle_video: "视频",
 
     game_server_ip_label: "启动时设置 GAME_SERVER_IP",
+    multi_instance_label: "允许双开",
+    multi_instance_help: "开启并保存后，启动游戏时不再检测或要求关闭已有的 DNF.exe，可使用不同账号启动多个游戏实例。",
     game_server_ip_help: "开启后，启动器将获取游戏服务器 IP 并通过环境变量 GAME_SERVER_IP 传递给 DNF.exe。",
 
     plugins_path_label: "插件路径",
@@ -494,6 +500,8 @@ const ZH_TW: Tr = Tr {
     bg_toggle_video: "影片",
 
     game_server_ip_label: "啟動時設定 GAME_SERVER_IP",
+    multi_instance_label: "允許雙開",
+    multi_instance_help: "啟用並儲存後，啟動遊戲時不再檢查或要求關閉現有的 DNF.exe，可使用不同帳號啟動多個遊戲。",
     game_server_ip_help: "啟用後，啟動器會取得遊戲伺服器 IP，並透過環境變數 GAME_SERVER_IP 傳遞給 DNF.exe。",
 
     plugins_path_label: "外掛路徑",
@@ -617,6 +625,8 @@ const JA: Tr = Tr {
     bg_toggle_video: "動画",
 
     game_server_ip_label: "起動時に GAME_SERVER_IP を設定",
+    multi_instance_label: "ゲームの複数起動を許可",
+    multi_instance_help: "有効にして保存すると、実行中の DNF.exe を確認・終了せずに別のゲームを起動します。",
     game_server_ip_help: "有効にすると、ランチャーがゲームサーバーの IP を取得し、環境変数 GAME_SERVER_IP として DNF.exe に渡します。",
 
     plugins_path_label: "プラグインパス",
@@ -740,6 +750,8 @@ const KO: Tr = Tr {
     bg_toggle_video: "동영상",
 
     game_server_ip_label: "실행 시 GAME_SERVER_IP 설정",
+    multi_instance_label: "게임 다중 실행 허용",
+    multi_instance_help: "활성화하고 저장하면 실행 중인 DNF.exe를 확인하거나 종료하지 않고 새 게임을 실행합니다.",
     game_server_ip_help: "활성화하면 런처가 게임 서버 IP를 가져와 환경 변수 GAME_SERVER_IP로 DNF.exe에 전달합니다.",
 
     plugins_path_label: "플러그인 경로",
