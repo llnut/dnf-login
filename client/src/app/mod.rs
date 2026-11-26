@@ -24,6 +24,7 @@ use crate::{
 
 mod bg;
 mod handlers;
+mod login;
 mod render;
 mod screens;
 mod theme;
@@ -156,6 +157,7 @@ pub struct DnfLoginApp {
 
     pub(super) message: Option<String>,
     pub(super) message_is_error: bool,
+    pub(super) show_login_details: bool,
 
     pub(super) show_confirm_close_dnf: bool,
     pub(super) pending_launch: Option<PendingLaunch>,
@@ -329,6 +331,7 @@ impl DnfLoginApp {
             changepwd_confirm: String::new(),
             message: None,
             message_is_error: false,
+            show_login_details: false,
             show_confirm_close_dnf: false,
             pending_launch: None,
         }
@@ -427,47 +430,46 @@ impl eframe::App for DnfLoginApp {
                 self.draw_thumbnail_strip(ui, screen);
             });
 
+        let login_screen = self.state == AppState::Login;
         let glass = egui::Frame::new()
             .fill(Self::c_glass_fill())
             .stroke(egui::Stroke::new(1.0, Self::c_glass_border()))
             .corner_radius(egui::CornerRadius::same(14))
             .inner_margin(egui::vec2(24.0, 18.0));
 
-        let login_screen = self.state == AppState::Login;
-        let max_card_h = if login_screen {
-            // Leave room for the frame margins and background thumbnail strip.
-            (screen.height() - 108.0).max(100.0)
+        let card = egui::Window::new(if login_screen {
+            "login_card"
         } else {
-            screen.height() - 68.0
-        };
-        let (anchor, offset) = if login_screen {
-            // Launch progress and results must not push the account list upwards.
-            (egui::Align2::CENTER_TOP, egui::vec2(0.0, 12.0))
+            "dnf_card"
+        })
+        .title_bar(false)
+        .resizable(false)
+        .movable(false)
+        .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, -22.0))
+        .frame(glass);
+        let card = if login_screen {
+            card.fixed_size(egui::vec2(360.0, login::card_height(screen.height())))
         } else {
-            (egui::Align2::CENTER_CENTER, egui::vec2(0.0, -22.0))
+            card.min_width(400.0)
+                .max_width(400.0)
+                .max_height(screen.height() - 68.0)
         };
-
-        egui::Window::new("dnf_card")
-            .title_bar(false)
-            .resizable(false)
-            .movable(false)
-            .min_width(400.0)
-            .max_width(400.0)
-            .max_height(max_card_h)
-            .vscroll(login_screen)
-            .anchor(anchor, offset)
-            .frame(glass)
-            .show(&ctx, |ui| {
-                match self.state {
-                    AppState::Login => self.show_login_screen(ui),
-                    AppState::Register => self.show_register_screen(ui),
-                    AppState::ChangePassword => self.show_change_password_screen(ui),
-                    AppState::Settings => self.show_settings_screen(ui),
-                    AppState::About => self.show_about_screen(ui),
-                }
+        card.show(&ctx, |ui| {
+            match self.state {
+                AppState::Login => self.show_login_screen(ui),
+                AppState::Register => self.show_register_screen(ui),
+                AppState::ChangePassword => self.show_change_password_screen(ui),
+                AppState::Settings => self.show_settings_screen(ui),
+                AppState::About => self.show_about_screen(ui),
+            }
+            if !login_screen {
                 self.show_message(ui);
-            });
+            }
+        });
 
+        if login_screen && self.show_login_details {
+            self.show_login_details_dialog(&ctx);
+        }
         if self.show_confirm_close_dnf {
             self.show_confirm_close_dialog(&ctx);
         }

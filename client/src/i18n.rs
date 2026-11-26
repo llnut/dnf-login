@@ -66,6 +66,17 @@ pub struct Tr {
     pub hint_password: &'static str,
 
     // Login screen
+    pub login_title: &'static str,
+    pub login_subtitle: &'static str,
+    pub current_input: &'static str,
+    pub saved_password: &'static str,
+    pub new_account: &'static str,
+    pub no_saved_accounts: &'static str,
+    pub view_details: &'static str,
+    pub launch_details: &'static str,
+    pub ready: &'static str,
+    pub launch_succeeded: &'static str,
+    pub launch_failed: &'static str,
     pub remember_password: &'static str,
     pub enter_game: &'static str,
     pub signing_in: &'static str,
@@ -205,6 +216,17 @@ pub fn translations(lang: Language) -> Tr {
 
 // English
 const EN: Tr = Tr {
+    login_title: "Sign in",
+    login_subtitle: "Choose a saved account or enter a new one.",
+    current_input: "Current input",
+    saved_password: "Password saved",
+    new_account: "+ New account",
+    no_saved_accounts: "Saved accounts will appear here",
+    view_details: "Details",
+    launch_details: "Launch details",
+    ready: "Ready",
+    launch_succeeded: "Launched",
+    launch_failed: "Failed",
     app_title: "DNF Launcher",
     app_subtitle: "DUNGEON & FIGHTER",
 
@@ -332,6 +354,17 @@ const EN: Tr = Tr {
 
 // Simplified Chinese
 const ZH_CN: Tr = Tr {
+    login_title: "登录账号",
+    login_subtitle: "选择已保存的账号，或输入新账号登录。",
+    current_input: "当前输入",
+    saved_password: "已记住密码",
+    new_account: "+ 新账号",
+    no_saved_accounts: "保存的账号将显示在这里",
+    view_details: "查看详情",
+    launch_details: "启动详情",
+    ready: "就绪",
+    launch_succeeded: "已启动",
+    launch_failed: "失败",
     app_title: "DNF 启动器",
     app_subtitle: "地下城与勇士",
 
@@ -459,6 +492,17 @@ const ZH_CN: Tr = Tr {
 
 // Traditional Chinese
 const ZH_TW: Tr = Tr {
+    login_title: "登入帳號",
+    login_subtitle: "選擇已儲存的帳號，或輸入新帳號登入。",
+    current_input: "目前輸入",
+    saved_password: "已記住密碼",
+    new_account: "+ 新帳號",
+    no_saved_accounts: "儲存的帳號將顯示在這裡",
+    view_details: "查看詳情",
+    launch_details: "啟動詳情",
+    ready: "就緒",
+    launch_succeeded: "已啟動",
+    launch_failed: "失敗",
     app_title: "DNF 啟動器",
     app_subtitle: "地下城與勇士",
 
@@ -586,6 +630,17 @@ const ZH_TW: Tr = Tr {
 
 // Japanese
 const JA: Tr = Tr {
+    login_title: "ログイン",
+    login_subtitle: "保存済みアカウントを選択、または新規入力。",
+    current_input: "入力中",
+    saved_password: "パスワード保存済み",
+    new_account: "+ 新しいアカウント",
+    no_saved_accounts: "保存したアカウントがここに表示されます",
+    view_details: "詳細",
+    launch_details: "起動の詳細",
+    ready: "準備完了",
+    launch_succeeded: "起動済み",
+    launch_failed: "失敗",
     app_title: "DNF ランチャー",
     app_subtitle: "ダンジョン＆ファイター",
 
@@ -713,6 +768,17 @@ const JA: Tr = Tr {
 
 // Korean
 const KO: Tr = Tr {
+    login_title: "로그인",
+    login_subtitle: "저장된 계정을 선택하거나 새 계정을 입력하세요.",
+    current_input: "현재 입력",
+    saved_password: "비밀번호 저장됨",
+    new_account: "+ 새 계정",
+    no_saved_accounts: "저장한 계정이 여기에 표시됩니다",
+    view_details: "자세히",
+    launch_details: "실행 상세 정보",
+    ready: "준비됨",
+    launch_succeeded: "실행됨",
+    launch_failed: "실패",
     app_title: "DNF 런처",
     app_subtitle: "던전 앤 파이터",
 
