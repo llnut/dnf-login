@@ -11,6 +11,7 @@
 
 ### Fixed
 
+- Keep the login account selector on screen after launching games: anchor the login card at the top, enable scrolling for overflow, reserve the progress row, and cap the launch-results area height.
 - Build 32-bit GNU hooks using a 64-bit Rust host toolchain with the i686 target.
 - Install MinGW through the MSYS2 setup action and isolate 32-bit build tools from 64-bit launcher builds in CI and release workflows.
 - Acknowledge the MINGW32 deprecation warning while retaining the 32-bit DLL target required by the game.

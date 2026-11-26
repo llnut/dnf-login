@@ -158,9 +158,11 @@ impl DnfLoginApp {
             }
         }
 
-        if matches!(self.current_task, Some(TaskType::Login)) {
-            ui.add_space(8.0);
-            ui.vertical_centered(|ui| {
+        // Reserve the progress row even when idle so starting a game does not
+        // resize the login form or move the account controls.
+        ui.add_space(8.0);
+        ui.allocate_ui(egui::vec2(ui.available_width(), 22.0), |ui| {
+            if matches!(self.current_task, Some(TaskType::Login)) {
                 ui.horizontal(|ui| {
                     ui.spinner();
                     ui.label(
@@ -169,8 +171,8 @@ impl DnfLoginApp {
                             .color(Self::c_text2()),
                     );
                 });
-            });
-        }
+            }
+        });
 
         ui.add_space(16.0);
         let sep = egui::Rect::from_min_size(ui.cursor().min, egui::vec2(ui.available_width(), 1.0));
@@ -862,13 +864,18 @@ impl DnfLoginApp {
                 .inner_margin(egui::vec2(16.0, 10.0))
                 .show(ui, |ui| {
                     ui.set_min_width(ui.available_width());
-                    ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                        ui.label(
-                            egui::RichText::new(msg.as_str())
-                                .size(13.5)
-                                .color(text_color),
-                        );
-                    });
+                    egui::ScrollArea::vertical()
+                        .id_salt("launch_results")
+                        .max_height(72.0)
+                        .show(ui, |ui| {
+                            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                                ui.label(
+                                    egui::RichText::new(msg.as_str())
+                                        .size(13.5)
+                                        .color(text_color),
+                                );
+                            });
+                        });
                 });
         }
     }

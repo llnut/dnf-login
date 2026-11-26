@@ -433,7 +433,19 @@ impl eframe::App for DnfLoginApp {
             .corner_radius(egui::CornerRadius::same(14))
             .inner_margin(egui::vec2(24.0, 18.0));
 
-        let max_card_h = screen.height() - 68.0;
+        let login_screen = self.state == AppState::Login;
+        let max_card_h = if login_screen {
+            // Leave room for the frame margins and background thumbnail strip.
+            (screen.height() - 108.0).max(100.0)
+        } else {
+            screen.height() - 68.0
+        };
+        let (anchor, offset) = if login_screen {
+            // Launch progress and results must not push the account list upwards.
+            (egui::Align2::CENTER_TOP, egui::vec2(0.0, 12.0))
+        } else {
+            (egui::Align2::CENTER_CENTER, egui::vec2(0.0, -22.0))
+        };
 
         egui::Window::new("dnf_card")
             .title_bar(false)
@@ -442,7 +454,8 @@ impl eframe::App for DnfLoginApp {
             .min_width(400.0)
             .max_width(400.0)
             .max_height(max_card_h)
-            .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, -22.0))
+            .vscroll(login_screen)
+            .anchor(anchor, offset)
             .frame(glass)
             .show(&ctx, |ui| {
                 match self.state {
