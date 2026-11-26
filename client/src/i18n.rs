@@ -379,7 +379,7 @@ const ZH_CN: Tr = Tr {
     bg_toggle_video: "视频",
 
     game_server_ip_label: "启动时设置 GAME_SERVER_IP",
-    multi_instance_label: "多开",
+    multi_instance_label: "启用多开",
     launch_selected: "启动所选账号",
     remove_account: "移除",
     multi_instance_help: "开启并保存后，启动游戏时不再检测或要求关闭已有的 DNF.exe，可使用不同账号启动多个游戏实例。",
@@ -506,7 +506,7 @@ const ZH_TW: Tr = Tr {
     bg_toggle_video: "影片",
 
     game_server_ip_label: "啟動時設定 GAME_SERVER_IP",
-    multi_instance_label: "多開",
+    multi_instance_label: "啟用多開",
     launch_selected: "啟動所選帳號",
     remove_account: "移除",
     multi_instance_help: "啟用並儲存後，啟動遊戲時不再檢查或要求關閉現有的 DNF.exe，可使用不同帳號啟動多個遊戲。",
