@@ -152,4 +152,6 @@ To disable plugin loading: uncheck the toggle in the settings screen, set `plugi
 
 ## License
 
+See [CHANGELOG.md](CHANGELOG.md) for changes and multi-account launch instructions.
+
 GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.

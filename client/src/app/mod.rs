@@ -24,6 +24,7 @@ use crate::{
 
 mod bg;
 mod handlers;
+mod login;
 mod render;
 mod screens;
 mod theme;
@@ -61,6 +62,7 @@ pub(super) enum TaskType {
 }
 
 pub(super) enum TaskResult {
+    BatchFinished(Vec<(String, Result<()>)>),
     Login(Result<crate::network::LoginResponse>, Option<String>),
     Register(Result<crate::network::RegisterResponse>),
     ChangePassword(Result<crate::network::SimpleResponse>),
@@ -135,10 +137,13 @@ pub struct DnfLoginApp {
     pub(super) settings_plugins_path: String,
     pub(super) settings_plugin_inject_enabled: bool,
     pub(super) settings_game_server_ip_enabled: bool,
+    pub(super) settings_allow_multi_instance: bool,
 
     pub(super) username: String,
     pub(super) password: String,
     pub(super) remember_password: bool,
+    pub(super) saved_accounts: Vec<(String, String)>,
+    pub(super) selected_accounts: std::collections::BTreeSet<String>,
 
     pub(super) register_username: String,
     pub(super) register_password: String,
@@ -152,6 +157,7 @@ pub struct DnfLoginApp {
 
     pub(super) message: Option<String>,
     pub(super) message_is_error: bool,
+    pub(super) show_login_details: bool,
 
     pub(super) show_confirm_close_dnf: bool,
     pub(super) pending_launch: Option<PendingLaunch>,
@@ -248,12 +254,14 @@ impl DnfLoginApp {
         };
 
         let settings_server_url = config.server_url.clone();
+        let saved_accounts = storage.load_accounts().unwrap_or_default();
         let settings_aes_key = config.aes_key.clone();
         let settings_pic_path = config.bg_pic_path.clone();
         let settings_vid_path = config.bg_vid_path.clone();
         let settings_plugins_path = config.plugins_path.clone();
         let settings_plugin_inject_enabled = config.plugin_inject_enabled;
         let settings_game_server_ip_enabled = config.game_server_ip_enabled;
+        let settings_allow_multi_instance = config.allow_multi_instance;
         let bg_index = config.bg_index;
         let tr = translations(config.language);
         let app_icon = Self::load_app_icon(&cc.egui_ctx);
@@ -307,9 +315,12 @@ impl DnfLoginApp {
             settings_plugins_path,
             settings_plugin_inject_enabled,
             settings_game_server_ip_enabled,
+            settings_allow_multi_instance,
             username,
             password,
             remember_password,
+            saved_accounts,
+            selected_accounts: std::collections::BTreeSet::new(),
             register_username: String::new(),
             register_password: String::new(),
             register_password_confirm: String::new(),
@@ -320,6 +331,7 @@ impl DnfLoginApp {
             changepwd_confirm: String::new(),
             message: None,
             message_is_error: false,
+            show_login_details: false,
             show_confirm_close_dnf: false,
             pending_launch: None,
         }
@@ -418,34 +430,46 @@ impl eframe::App for DnfLoginApp {
                 self.draw_thumbnail_strip(ui, screen);
             });
 
+        let login_screen = self.state == AppState::Login;
         let glass = egui::Frame::new()
             .fill(Self::c_glass_fill())
             .stroke(egui::Stroke::new(1.0, Self::c_glass_border()))
             .corner_radius(egui::CornerRadius::same(14))
             .inner_margin(egui::vec2(24.0, 18.0));
 
-        let max_card_h = screen.height() - 68.0;
-
-        egui::Window::new("dnf_card")
-            .title_bar(false)
-            .resizable(false)
-            .movable(false)
-            .min_width(400.0)
-            .max_width(400.0)
-            .max_height(max_card_h)
-            .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, -22.0))
-            .frame(glass)
-            .show(&ctx, |ui| {
-                match self.state {
-                    AppState::Login => self.show_login_screen(ui),
-                    AppState::Register => self.show_register_screen(ui),
-                    AppState::ChangePassword => self.show_change_password_screen(ui),
-                    AppState::Settings => self.show_settings_screen(ui),
-                    AppState::About => self.show_about_screen(ui),
-                }
+        let card = egui::Window::new(if login_screen {
+            "login_card"
+        } else {
+            "dnf_card"
+        })
+        .title_bar(false)
+        .resizable(false)
+        .movable(false)
+        .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, -22.0))
+        .frame(glass);
+        let card = if login_screen {
+            card.fixed_size(egui::vec2(360.0, login::card_height(screen.height())))
+        } else {
+            card.min_width(400.0)
+                .max_width(400.0)
+                .max_height(screen.height() - 68.0)
+        };
+        card.show(&ctx, |ui| {
+            match self.state {
+                AppState::Login => self.show_login_screen(ui),
+                AppState::Register => self.show_register_screen(ui),
+                AppState::ChangePassword => self.show_change_password_screen(ui),
+                AppState::Settings => self.show_settings_screen(ui),
+                AppState::About => self.show_about_screen(ui),
+            }
+            if !login_screen {
                 self.show_message(ui);
-            });
+            }
+        });
 
+        if login_screen && self.show_login_details {
+            self.show_login_details_dialog(&ctx);
+        }
         if self.show_confirm_close_dnf {
             self.show_confirm_close_dialog(&ctx);
         }

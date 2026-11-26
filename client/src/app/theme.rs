@@ -77,10 +77,10 @@ impl DnfLoginApp {
         egui::Color32::from_rgb(180, 155, 235)
     }
     pub(super) fn c_glass_fill() -> egui::Color32 {
-        egui::Color32::from_rgba_premultiplied(6, 9, 22, 218)
+        egui::Color32::from_rgba_unmultiplied(27, 41, 65, 232)
     }
     pub(super) fn c_glass_border() -> egui::Color32 {
-        egui::Color32::from_rgba_premultiplied(18, 28, 70, 55)
+        egui::Color32::from_rgba_unmultiplied(160, 185, 220, 48)
     }
     pub(super) fn c_overlay() -> egui::Color32 {
         egui::Color32::from_rgba_premultiplied(0, 0, 6, 75)

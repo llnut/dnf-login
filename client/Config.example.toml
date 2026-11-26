@@ -37,3 +37,7 @@ plugins_path = "plugins"
 
 # When false, the DLL injection step is skipped.
 plugin_inject_enabled = true
+
+# Allow another game to launch without checking or closing existing DNF.exe instances.
+# Save this option in Settings to enable dual/multiple instances.
+allow_multi_instance = false

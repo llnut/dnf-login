@@ -26,6 +26,93 @@ use crate::{
 
 // Action handlers
 impl DnfLoginApp {
+    pub(super) fn login_accounts(&self) -> Vec<(String, String)> {
+        accounts_for_launch(
+            &self.saved_accounts,
+            &self.selected_accounts,
+            &self.username,
+            &self.password,
+            self.config.allow_multi_instance,
+        )
+    }
+
+    pub(super) fn handle_batch_login(&mut self) {
+        if self.current_task.is_some() {
+            return;
+        }
+        let accounts = self.login_accounts();
+        if accounts.is_empty() {
+            return;
+        }
+        if !self.config.allow_multi_instance && accounts.len() > 1 {
+            self.set_error(self.t().multi_instance_help);
+            return;
+        }
+        let Some(client) = self.client.clone() else {
+            self.set_error(self.t().err_client_not_init);
+            return;
+        };
+        let mac = match platform::get_mac_address() {
+            Ok(mac) => mac,
+            Err(error) => {
+                self.set_error(error.to_string());
+                return;
+            }
+        };
+        if accounts.iter().any(|(name, _)| name == &self.username) && !self.password.is_empty() {
+            if let Err(error) =
+                self.storage
+                    .save(&self.username, &self.password, self.remember_password)
+            {
+                self.set_error(error.to_string());
+                return;
+            }
+            self.saved_accounts = self.storage.load_accounts().unwrap_or_default();
+            self.selected_accounts
+                .retain(|name| self.saved_accounts.iter().any(|(saved, _)| saved == name));
+        }
+        let config = self.config.clone();
+        let tx = self.task_tx.clone();
+        self.message = None;
+        self.current_task = Some(TaskType::Login);
+        self.runtime.spawn(async move {
+            let ip = if config.plugin_inject_enabled && config.game_server_ip_enabled {
+                match client.get_game_server_ip().await {
+                    Ok(Some(ip)) => ip,
+                    _ => crate::network::resolve_server_ip(&config.server_url)
+                        .await
+                        .unwrap_or_default(),
+                }
+            } else {
+                String::new()
+            };
+            let mut results = Vec::new();
+            for (username, password) in accounts {
+                let result = async {
+                    let response = client.login(&username, &md5_hash(&password), &mac).await?;
+                    if !response.success {
+                        anyhow::bail!(
+                            "{}",
+                            response.error.unwrap_or_else(|| "Login failed".to_string())
+                        );
+                    }
+                    let token = response
+                        .token
+                        .ok_or_else(|| anyhow::anyhow!("Missing login token"))?;
+                    DnfLauncher::launch_with_token(
+                        &token,
+                        &config.plugins_path,
+                        config.plugin_inject_enabled,
+                        &ip,
+                    )
+                }
+                .await;
+                results.push((username, result));
+            }
+            let _ = tx.send(TaskResult::BatchFinished(results));
+        });
+    }
+
     fn translate_server_error(&self, error: &str) -> &'static str {
         let tr = self.t();
         match error {
@@ -229,6 +316,7 @@ impl DnfLoginApp {
             plugins_path: self.settings_plugins_path.trim().to_string(),
             plugin_inject_enabled: self.settings_plugin_inject_enabled,
             game_server_ip_enabled: self.settings_game_server_ip_enabled,
+            allow_multi_instance: self.settings_allow_multi_instance,
             ..self.config.clone()
         };
 
@@ -261,6 +349,28 @@ impl DnfLoginApp {
     pub(super) fn handle_task_result(&mut self, result: TaskResult) {
         let tr = self.t();
         match result {
+            TaskResult::BatchFinished(results) => {
+                self.current_task = None;
+                let failed = results.iter().any(|(_, result)| result.is_err());
+                let succeeded = results.iter().filter(|(_, result)| result.is_ok()).count();
+                let summary = format!(
+                    "{}: {} / {}: {}",
+                    tr.launch_succeeded,
+                    succeeded,
+                    tr.launch_failed,
+                    results.len() - succeeded
+                );
+                let details = results
+                    .into_iter()
+                    .map(|(name, result)| match result {
+                        Ok(()) => format!("{}: {}", name, tr.login_success),
+                        Err(error) => format!("{}: {}", name, error),
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                self.message = Some(format!("{summary}\n{details}"));
+                self.message_is_error = failed;
+            }
             TaskResult::Login(res, game_server_ip) => {
                 self.current_task = None;
                 match res {
@@ -284,12 +394,19 @@ impl DnfLoginApp {
                                     self.password = p;
                                 }
                                 self.set_success(tr.login_success);
+                                self.saved_accounts =
+                                    self.storage.load_accounts().unwrap_or_default();
+                                self.selected_accounts.retain(|name| {
+                                    self.saved_accounts.iter().any(|(saved, _)| saved == name)
+                                });
 
                                 let plugins_path = self.config.plugins_path.clone();
                                 let inject_enabled = self.config.plugin_inject_enabled;
                                 let server_ip = game_server_ip.unwrap_or_default();
 
-                                if platform::is_process_running("DNF.exe").unwrap_or(false) {
+                                if !self.config.allow_multi_instance
+                                    && platform::is_process_running("DNF.exe").unwrap_or(false)
+                                {
                                     self.pending_launch = Some(PendingLaunch {
                                         token,
                                         plugins_path,
@@ -397,5 +514,75 @@ impl DnfLoginApp {
                     .unwrap_or_else(|e| Err(anyhow::anyhow!("{}", e)));
             let _ = tx.send(TaskResult::CloseDnf(result));
         });
+    }
+}
+
+fn accounts_for_launch(
+    saved: &[(String, String)],
+    selected: &std::collections::BTreeSet<String>,
+    username: &str,
+    password: &str,
+    multi: bool,
+) -> Vec<(String, String)> {
+    if multi && !selected.is_empty() {
+        saved
+            .iter()
+            .filter(|(name, _)| selected.contains(name))
+            .map(|(name, stored)| {
+                let password = if name == username && !password.is_empty() {
+                    password
+                } else {
+                    stored
+                };
+                (name.clone(), password.to_owned())
+            })
+            .collect()
+    } else if !username.trim().is_empty() && !password.is_empty() {
+        vec![(username.to_owned(), password.to_owned())]
+    } else {
+        Vec::new()
+    }
+}
+
+#[cfg(test)]
+mod login_selection_tests {
+    use super::accounts_for_launch;
+    use std::collections::BTreeSet;
+
+    #[test]
+    fn batch_only_launches_checked_accounts_and_uses_edited_password() {
+        let saved = vec![
+            ("alpha".into(), "old".into()),
+            ("beta".into(), "beta-password".into()),
+        ];
+        let selected = BTreeSet::from(["alpha".into()]);
+        assert_eq!(
+            accounts_for_launch(&saved, &selected, "beta", "edited", true),
+            vec![("alpha".into(), "old".into())]
+        );
+        assert_eq!(
+            accounts_for_launch(&saved, &selected, "alpha", "edited", true),
+            vec![("alpha".into(), "edited".into())]
+        );
+    }
+
+    #[test]
+    fn single_mode_ignores_previous_batch_selection() {
+        let saved = vec![("alpha".into(), "saved".into())];
+        let selected = BTreeSet::from(["alpha".into()]);
+        assert_eq!(
+            accounts_for_launch(&saved, &selected, "beta", "typed", false),
+            vec![("beta".into(), "typed".into())]
+        );
+        assert!(accounts_for_launch(&saved, &selected, "beta", "", false).is_empty());
+    }
+
+    #[test]
+    fn no_selection_uses_current_input_once() {
+        let saved = vec![("alpha".into(), "saved".into())];
+        assert_eq!(
+            accounts_for_launch(&saved, &BTreeSet::new(), "alpha", "typed", true),
+            vec![("alpha".into(), "typed".into())]
+        );
     }
 }

@@ -66,6 +66,17 @@ pub struct Tr {
     pub hint_password: &'static str,
 
     // Login screen
+    pub login_title: &'static str,
+    pub login_subtitle: &'static str,
+    pub current_input: &'static str,
+    pub saved_password: &'static str,
+    pub new_account: &'static str,
+    pub no_saved_accounts: &'static str,
+    pub view_details: &'static str,
+    pub launch_details: &'static str,
+    pub ready: &'static str,
+    pub launch_succeeded: &'static str,
+    pub launch_failed: &'static str,
     pub remember_password: &'static str,
     pub enter_game: &'static str,
     pub signing_in: &'static str,
@@ -105,6 +116,10 @@ pub struct Tr {
     pub bg_toggle_video: &'static str,
 
     // Game server IP
+    pub multi_instance_label: &'static str,
+    pub launch_selected: &'static str,
+    pub remove_account: &'static str,
+    pub multi_instance_help: &'static str,
     pub game_server_ip_label: &'static str,
     pub game_server_ip_help: &'static str,
 
@@ -201,6 +216,17 @@ pub fn translations(lang: Language) -> Tr {
 
 // English
 const EN: Tr = Tr {
+    login_title: "Sign in",
+    login_subtitle: "Choose a saved account or enter a new one.",
+    current_input: "Current input",
+    saved_password: "Password saved",
+    new_account: "+ New account",
+    no_saved_accounts: "Saved accounts will appear here",
+    view_details: "Details",
+    launch_details: "Launch details",
+    ready: "Ready",
+    launch_succeeded: "Launched",
+    launch_failed: "Failed",
     app_title: "DNF Launcher",
     app_subtitle: "DUNGEON & FIGHTER",
 
@@ -248,6 +274,10 @@ const EN: Tr = Tr {
     bg_toggle_video: "Video",
 
     game_server_ip_label: "Set GAME_SERVER_IP on launch",
+    multi_instance_label: "Allow multiple game instances",
+    launch_selected: "Launch selected accounts",
+    remove_account: "Remove",
+    multi_instance_help: "When enabled, launch another game without checking for or closing existing DNF.exe instances. Save to apply.",
     game_server_ip_help: "When enabled, the launcher fetches the game server IP and passes it to DNF.exe via the GAME_SERVER_IP environment variable.",
 
     plugins_path_label: "PLUGIN PATH",
@@ -324,6 +354,17 @@ const EN: Tr = Tr {
 
 // Simplified Chinese
 const ZH_CN: Tr = Tr {
+    login_title: "登录账号",
+    login_subtitle: "选择已保存的账号，或输入新账号登录。",
+    current_input: "当前输入",
+    saved_password: "已记住密码",
+    new_account: "+ 新账号",
+    no_saved_accounts: "保存的账号将显示在这里",
+    view_details: "查看详情",
+    launch_details: "启动详情",
+    ready: "就绪",
+    launch_succeeded: "已启动",
+    launch_failed: "失败",
     app_title: "DNF 启动器",
     app_subtitle: "地下城与勇士",
 
@@ -371,6 +412,10 @@ const ZH_CN: Tr = Tr {
     bg_toggle_video: "视频",
 
     game_server_ip_label: "启动时设置 GAME_SERVER_IP",
+    multi_instance_label: "启用多开",
+    launch_selected: "启动所选账号",
+    remove_account: "移除",
+    multi_instance_help: "开启并保存后，启动游戏时不再检测或要求关闭已有的 DNF.exe，可使用不同账号启动多个游戏实例。",
     game_server_ip_help: "开启后，启动器将获取游戏服务器 IP 并通过环境变量 GAME_SERVER_IP 传递给 DNF.exe。",
 
     plugins_path_label: "插件路径",
@@ -447,6 +492,17 @@ const ZH_CN: Tr = Tr {
 
 // Traditional Chinese
 const ZH_TW: Tr = Tr {
+    login_title: "登入帳號",
+    login_subtitle: "選擇已儲存的帳號，或輸入新帳號登入。",
+    current_input: "目前輸入",
+    saved_password: "已記住密碼",
+    new_account: "+ 新帳號",
+    no_saved_accounts: "儲存的帳號將顯示在這裡",
+    view_details: "查看詳情",
+    launch_details: "啟動詳情",
+    ready: "就緒",
+    launch_succeeded: "已啟動",
+    launch_failed: "失敗",
     app_title: "DNF 啟動器",
     app_subtitle: "地下城與勇士",
 
@@ -494,6 +550,10 @@ const ZH_TW: Tr = Tr {
     bg_toggle_video: "影片",
 
     game_server_ip_label: "啟動時設定 GAME_SERVER_IP",
+    multi_instance_label: "啟用多開",
+    launch_selected: "啟動所選帳號",
+    remove_account: "移除",
+    multi_instance_help: "啟用並儲存後，啟動遊戲時不再檢查或要求關閉現有的 DNF.exe，可使用不同帳號啟動多個遊戲。",
     game_server_ip_help: "啟用後，啟動器會取得遊戲伺服器 IP，並透過環境變數 GAME_SERVER_IP 傳遞給 DNF.exe。",
 
     plugins_path_label: "外掛路徑",
@@ -570,6 +630,17 @@ const ZH_TW: Tr = Tr {
 
 // Japanese
 const JA: Tr = Tr {
+    login_title: "ログイン",
+    login_subtitle: "保存済みアカウントを選択、または新規入力。",
+    current_input: "入力中",
+    saved_password: "パスワード保存済み",
+    new_account: "+ 新しいアカウント",
+    no_saved_accounts: "保存したアカウントがここに表示されます",
+    view_details: "詳細",
+    launch_details: "起動の詳細",
+    ready: "準備完了",
+    launch_succeeded: "起動済み",
+    launch_failed: "失敗",
     app_title: "DNF ランチャー",
     app_subtitle: "ダンジョン＆ファイター",
 
@@ -617,6 +688,10 @@ const JA: Tr = Tr {
     bg_toggle_video: "動画",
 
     game_server_ip_label: "起動時に GAME_SERVER_IP を設定",
+    multi_instance_label: "ゲームの複数起動を許可",
+    launch_selected: "選択したアカウントを起動",
+    remove_account: "削除",
+    multi_instance_help: "有効にして保存すると、実行中の DNF.exe を確認・終了せずに別のゲームを起動します。",
     game_server_ip_help: "有効にすると、ランチャーがゲームサーバーの IP を取得し、環境変数 GAME_SERVER_IP として DNF.exe に渡します。",
 
     plugins_path_label: "プラグインパス",
@@ -693,6 +768,17 @@ const JA: Tr = Tr {
 
 // Korean
 const KO: Tr = Tr {
+    login_title: "로그인",
+    login_subtitle: "저장된 계정을 선택하거나 새 계정을 입력하세요.",
+    current_input: "현재 입력",
+    saved_password: "비밀번호 저장됨",
+    new_account: "+ 새 계정",
+    no_saved_accounts: "저장한 계정이 여기에 표시됩니다",
+    view_details: "자세히",
+    launch_details: "실행 상세 정보",
+    ready: "준비됨",
+    launch_succeeded: "실행됨",
+    launch_failed: "실패",
     app_title: "DNF 런처",
     app_subtitle: "던전 앤 파이터",
 
@@ -740,6 +826,10 @@ const KO: Tr = Tr {
     bg_toggle_video: "동영상",
 
     game_server_ip_label: "실행 시 GAME_SERVER_IP 설정",
+    multi_instance_label: "게임 다중 실행 허용",
+    launch_selected: "선택한 계정 실행",
+    remove_account: "삭제",
+    multi_instance_help: "활성화하고 저장하면 실행 중인 DNF.exe를 확인하거나 종료하지 않고 새 게임을 실행합니다.",
     game_server_ip_help: "활성화하면 런처가 게임 서버 IP를 가져와 환경 변수 GAME_SERVER_IP로 DNF.exe에 전달합니다.",
 
     plugins_path_label: "플러그인 경로",

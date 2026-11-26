@@ -28,87 +28,10 @@ impl DnfLoginApp {
     }
 }
 
-// Login Screen
+// Login navigation
 impl DnfLoginApp {
-    pub(super) fn show_login_screen(&mut self, ui: &mut egui::Ui) {
+    pub(super) fn show_login_links(&mut self, ui: &mut egui::Ui) {
         let tr = self.t();
-
-        ui.vertical_centered(|ui| {
-            Self::draw_app_icon(ui, self.app_icon.as_ref());
-            ui.add_space(2.0);
-            ui.label(
-                egui::RichText::new(tr.app_title)
-                    .size(22.0)
-                    .strong()
-                    .color(Self::c_text()),
-            );
-            ui.add_space(2.0);
-            ui.label(
-                egui::RichText::new(tr.app_subtitle)
-                    .size(12.0)
-                    .color(Self::c_text3()),
-            );
-        });
-
-        ui.add_space(10.0);
-
-        if !self.config.is_configured() {
-            Self::warning_box(ui, tr.warn_server_not_configured);
-            ui.add_space(12.0);
-        }
-
-        ui.add(Self::text_input(
-            tr.username,
-            &mut self.username,
-            tr.hint_username,
-        ));
-        ui.add_space(12.0);
-
-        ui.add(Self::password_input(
-            tr.password,
-            &mut self.password,
-            tr.hint_password,
-        ));
-        ui.add_space(9.0);
-
-        ui.checkbox(
-            &mut self.remember_password,
-            egui::RichText::new(tr.remember_password)
-                .size(13.5)
-                .color(Self::c_text2()),
-        );
-        ui.add_space(16.0);
-
-        let login_enabled =
-            !self.username.is_empty() && !self.password.is_empty() && self.current_task.is_none();
-        let enter_pressed = ui.input(|i| i.key_pressed(egui::Key::Enter));
-
-        if Self::primary_button(ui, tr.enter_game, login_enabled)
-            || (enter_pressed && login_enabled)
-        {
-            self.handle_login();
-        }
-
-        if matches!(self.current_task, Some(TaskType::Login)) {
-            ui.add_space(8.0);
-            ui.vertical_centered(|ui| {
-                ui.horizontal(|ui| {
-                    ui.spinner();
-                    ui.label(
-                        egui::RichText::new(tr.signing_in)
-                            .size(13.0)
-                            .color(Self::c_text2()),
-                    );
-                });
-            });
-        }
-
-        ui.add_space(16.0);
-        let sep = egui::Rect::from_min_size(ui.cursor().min, egui::vec2(ui.available_width(), 1.0));
-        ui.painter()
-            .rect_filled(sep, egui::CornerRadius::ZERO, Self::c_border());
-        ui.add_space(11.0);
-
         ui.columns(4, |cols| {
             cols[0].vertical_centered(|ui| {
                 if ui
@@ -154,6 +77,7 @@ impl DnfLoginApp {
                     self.settings_aes_key = self.config.aes_key.clone();
                     self.settings_pic_path = self.config.bg_pic_path.clone();
                     self.settings_vid_path = self.config.bg_vid_path.clone();
+                    self.settings_allow_multi_instance = self.config.allow_multi_instance;
                 }
             });
             cols[3].vertical_centered(|ui| {
@@ -523,6 +447,20 @@ impl DnfLoginApp {
                 ui.add_space(13.0);
 
                 ui.checkbox(
+                    &mut self.settings_allow_multi_instance,
+                    egui::RichText::new(tr.multi_instance_label)
+                        .size(13.5)
+                        .color(Self::c_text2()),
+                );
+                ui.add_space(3.0);
+                ui.label(
+                    egui::RichText::new(tr.multi_instance_help)
+                        .size(11.5)
+                        .color(Self::c_text3()),
+                );
+                ui.add_space(10.0);
+
+                ui.checkbox(
                     &mut self.settings_plugin_inject_enabled,
                     egui::RichText::new(tr.plugin_inject_label)
                         .size(13.5)
@@ -778,13 +716,18 @@ impl DnfLoginApp {
                 .inner_margin(egui::vec2(16.0, 10.0))
                 .show(ui, |ui| {
                     ui.set_min_width(ui.available_width());
-                    ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                        ui.label(
-                            egui::RichText::new(msg.as_str())
-                                .size(13.5)
-                                .color(text_color),
-                        );
-                    });
+                    egui::ScrollArea::vertical()
+                        .id_salt("launch_results")
+                        .max_height(72.0)
+                        .show(ui, |ui| {
+                            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                                ui.label(
+                                    egui::RichText::new(msg.as_str())
+                                        .size(13.5)
+                                        .color(text_color),
+                                );
+                            });
+                        });
                 });
         }
     }
