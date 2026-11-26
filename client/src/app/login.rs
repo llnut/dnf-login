@@ -1,6 +1,17 @@
 // dnf-login: a launcher for Dungeon & Fighter written in Rust.
 // Copyright (C) 2026 llnut
-// SPDX-License-Identifier: AGPL-3.0-only
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, version 3.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use eframe::egui;
 
@@ -25,23 +36,33 @@ fn login_body(ui: &mut egui::Ui, height: f32, contents: impl FnOnce(&mut egui::U
 }
 
 fn login_button(ui: &mut egui::Ui, label: &str, enabled: bool) -> egui::Response {
-    ui.add_enabled(
-        enabled,
-        egui::Button::new(
-            egui::RichText::new(label)
-                .size(14.0)
-                .strong()
-                .color(egui::Color32::from_rgb(30, 42, 61)),
-        )
-        .fill(if enabled {
-            egui::Color32::from_rgb(232, 239, 250)
-        } else {
+    ui.add_enabled_ui(enabled, |ui| {
+        let (rect, response) =
+            ui.allocate_exact_size(egui::vec2(ui.available_width(), 40.0), egui::Sense::click());
+        response.widget_info(|| {
+            egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), label)
+        });
+        let fill = if !ui.is_enabled() {
             egui::Color32::from_rgb(119, 132, 154)
-        })
-        .stroke(egui::Stroke::NONE)
-        .corner_radius(20)
-        .min_size(egui::vec2(ui.available_width(), 40.0)),
-    )
+        } else if response.is_pointer_button_down_on() {
+            egui::Color32::from_rgb(188, 205, 230)
+        } else if response.hovered() {
+            egui::Color32::WHITE
+        } else {
+            egui::Color32::from_rgb(232, 239, 250)
+        };
+        ui.painter()
+            .rect_filled(rect, egui::CornerRadius::same(20), fill);
+        ui.painter().text(
+            rect.center(),
+            egui::Align2::CENTER_CENTER,
+            label,
+            egui::FontId::proportional(14.0),
+            egui::Color32::from_rgb(30, 42, 61),
+        );
+        response
+    })
+    .inner
 }
 
 fn status_line(ui: &mut egui::Ui, text: &str, error: bool, details: Option<&str>) -> bool {
@@ -74,13 +95,8 @@ impl DnfLoginApp {
         let height = card_height(ui.ctx().viewport_rect().height());
         ui.spacing_mut().item_spacing.y = 4.0;
         let widgets = &mut ui.visuals_mut().widgets;
-        for visual in [
-            &mut widgets.inactive,
-            &mut widgets.hovered,
-            &mut widgets.active,
-        ] {
-            visual.corner_radius = egui::CornerRadius::same(9);
-        }
+        widgets.inactive.bg_fill = egui::Color32::from_rgb(55, 73, 100);
+        widgets.inactive.bg_stroke = egui::Stroke::new(1.0, egui::Color32::from_rgb(100, 125, 160));
         ui.set_min_height(height);
         ui.allocate_ui(egui::vec2(ui.available_width(), HEADER_HEIGHT), |ui| {
             ui.label(
@@ -193,15 +209,25 @@ impl DnfLoginApp {
 
     fn login_input(ui: &mut egui::Ui, label: &str, value: &mut String, hint: &str, password: bool) {
         ui.label(egui::RichText::new(label).size(12.0).color(Self::c_text2()));
-        ui.add(
-            egui::TextEdit::singleline(value)
-                .password(password)
-                .desired_width(f32::INFINITY)
-                .min_size(egui::vec2(0.0, 20.0))
-                .margin(egui::vec2(10.0, 6.0))
-                .background_color(egui::Color32::from_rgba_unmultiplied(155, 180, 220, 20))
-                .hint_text(hint),
-        );
+        ui.scope(|ui| {
+            let widgets = &mut ui.visuals_mut().widgets;
+            for visual in [
+                &mut widgets.inactive,
+                &mut widgets.hovered,
+                &mut widgets.active,
+            ] {
+                visual.corner_radius = egui::CornerRadius::same(9);
+            }
+            ui.add(
+                egui::TextEdit::singleline(value)
+                    .password(password)
+                    .desired_width(f32::INFINITY)
+                    .min_size(egui::vec2(0.0, 20.0))
+                    .margin(egui::vec2(10.0, 6.0))
+                    .background_color(egui::Color32::from_rgba_unmultiplied(155, 180, 220, 20))
+                    .hint_text(hint),
+            );
+        });
     }
 
     fn show_saved_account_cards(&mut self, ui: &mut egui::Ui) {
@@ -426,7 +452,11 @@ mod tests {
                                 button = login_button(ui, "Launch selected (2)", true).rect;
                                 status_line(
                                     ui,
-                                    &"Account: launch failed\n".repeat(rows.max(1)),
+                                    &format!(
+                                        "{}\n{}",
+                                        "long error ".repeat(100),
+                                        "Account: launch failed\n".repeat(rows.max(1))
+                                    ),
                                     true,
                                     Some("Details"),
                                 );
@@ -449,5 +479,71 @@ mod tests {
             }
             reference = Some(button);
         }
+    }
+
+    #[test]
+    fn account_fill_and_batch_checkbox_are_independent() {
+        fn draw(ctx: &egui::Context, events: Vec<egui::Event>, selected: &mut bool) -> bool {
+            let mut filled = false;
+            let _ = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(360.0, 60.0),
+                    )),
+                    events,
+                    ..Default::default()
+                },
+                |ui| {
+                    filled = account_card(
+                        ui,
+                        &"long-account-name".repeat(30),
+                        false,
+                        selected,
+                        true,
+                        crate::i18n::translations(crate::i18n::Language::English),
+                    )
+                    .0;
+                    assert!(
+                        ui.min_rect().width() <= 360.0,
+                        "long names must be clipped inside the row"
+                    );
+                },
+            );
+            filled
+        }
+
+        fn click(x: f32) -> Vec<egui::Event> {
+            let pos = egui::pos2(x, 20.0);
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers: egui::Modifiers::NONE,
+                },
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: false,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ]
+        }
+
+        let ctx = egui::Context::default();
+        let mut selected = false;
+        draw(&ctx, vec![], &mut selected);
+        assert!(
+            !draw(&ctx, click(342.0), &mut selected),
+            "checking must not fill the form"
+        );
+        assert!(selected);
+        assert!(
+            draw(&ctx, click(80.0), &mut selected),
+            "clicking the name must fill the form"
+        );
+        assert!(selected, "filling the form must preserve batch selection");
     }
 }
